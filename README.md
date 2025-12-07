@@ -68,7 +68,3 @@ This application is specifically designed for Karmine Corp watchparties in Seoul
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
-
-## License
-
-[Your License Here]
