@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read user profiles (for leaderboard & username uniqueness check)
+      // (Contains only non-sensitive info: username, scores, isAdmin flag, etc.)
+      allow read: if true;
+      
+      // Users can only create/update their own profile, admins can update any profile
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // Matches collection
+    match /matches/{matchId} {
+      // Anyone can read matches
+      allow read: if true;
+      
+      // Only admins can create, update, or delete matches
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Bets collection
+    match /bets/{betId} {
+      // Users can read their own bets, admins can read all bets
+      allow read: if isSignedIn() && 
+                     (request.auth.uid == resource.data.userId || isAdmin());
+      
+      // Users can create bets for themselves
+      allow create: if isSignedIn() && 
+                       request.auth.uid == request.resource.data.userId &&
+                       request.resource.data.score == 0 &&
+                       request.resource.data.status == "pending" &&
+                       // 🔒 Verify the match is still open (prevents race conditions)
+                       get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.status == "open";
+      
+      // Updates:
+      // - Admins can always update bets (for scoring, corrections, etc.)
+      // - Users can modify their own bets ONLY while they are still pending and unscored
+      allow update: if
+        // Admins keep full control
+        isAdmin()
+        ||
+        // Owner can update a pending bet that has not been scored yet
+        (
+          isSignedIn() &&
+          request.auth.uid == resource.data.userId &&
+          // Bet must remain assigned to the same user/match/event
+          request.resource.data.userId == resource.data.userId &&
+          request.resource.data.matchId == resource.data.matchId &&
+          request.resource.data.eventId == resource.data.eventId &&
+          // Old and new values must both be pending + score 0
+          resource.data.status == "pending" &&
+          request.resource.data.status == "pending" &&
+          resource.data.score == 0 &&
+          request.resource.data.score == 0 &&
+          // 🔒 Verify the match is still open (prevents race conditions)
+          get(/databases/$(database)/documents/matches/$(resource.data.matchId)).data.status == "open"
+        );
+      
+      // Only admins can delete bets
+      allow delete: if isAdmin();
+    }
+    
+    // Events collection (if you add events later)
+    match /events/{eventId} {
+      // Anyone can read events
+      allow read: if true;
+      
+      // Only admins can create, update, or delete events
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
