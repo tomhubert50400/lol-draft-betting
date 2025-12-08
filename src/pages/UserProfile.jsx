@@ -177,6 +177,13 @@ export default function UserProfile() {
     scoredBets.length > 0 ? (totalPoints / scoredBets.length).toFixed(1) : 0;
   const socials = user.socials || {};
 
+  // Convertir events en tableau trié
+  const eventsList = Object.values(events).sort((a, b) => {
+    const aTime = a.createdAt?.seconds || 0;
+    const bTime = b.createdAt?.seconds || 0;
+    return bTime - aTime; // Plus récent en premier
+  });
+
   const calculateAdvancedStats = () => {
     const roleStats = {
       Top: { correct: 0, total: 0 },
@@ -799,12 +806,47 @@ export default function UserProfile() {
             )}
 
             <div className="recent-bets" style={{ marginTop: "1.5rem" }}>
-              <h3>Recent Bets</h3>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "1rem",
+                }}
+              >
+                <h3>Recent Bets</h3>
+                {bets.length > 0 && (
+                  <button
+                    onClick={() => navigate(`/profile/${userId}/bets`)}
+                    className="btn-primary"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    View all bets
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
               {bets.length === 0 ? (
                 <p>No bets placed yet</p>
               ) : (
                 <div className="bets-list">
-                  {bets.slice(0, 10).map((bet) => {
+                  {bets.slice(0, 3).map((bet) => {
                     const match = matches[bet.matchId];
                     if (!match) return null;
 
