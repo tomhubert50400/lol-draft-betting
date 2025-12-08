@@ -15,7 +15,7 @@ import { logger } from "../utils/logger";
 
 export default function UserProfile() {
   const { userId } = useParams();
-  const { currentUser, updateUserSocials, changePassword } = useAuth();
+  const { currentUser, isAdmin, updateUserSocials, changePassword } = useAuth();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [bets, setBets] = useState([]);
@@ -23,8 +23,16 @@ export default function UserProfile() {
   const [matches, setMatches] = useState({});
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editSocials, setEditSocials] = useState({ twitter: "", instagram: "", discord: "" });
-  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
+  const [editSocials, setEditSocials] = useState({
+    twitter: "",
+    instagram: "",
+    discord: "",
+  });
+  const [passwordData, setPasswordData] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
@@ -33,7 +41,7 @@ export default function UserProfile() {
     if (userId) {
       loadUserProfile();
     }
-  }, [userId]);
+  }, [userId, currentUser, isAdmin]);
 
   async function loadUserProfile() {
     setLoading(true);
@@ -46,21 +54,27 @@ export default function UserProfile() {
       }
       setUser({ id: userDoc.id, ...userDoc.data() });
 
-      const betsQuery = query(
-        collection(db, "bets"),
-        where("userId", "==", userId)
-      );
-      const betsSnapshot = await getDocs(betsQuery);
-      const betsData = betsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      betsData.sort((a, b) => {
-        const aTime = a.createdAt?.seconds || 0;
-        const bTime = b.createdAt?.seconds || 0;
-        return bTime - aTime;
-      });
-      setBets(betsData);
+      // Tous les utilisateurs peuvent voir les bets de n'importe qui
+      try {
+        const betsQuery = query(
+          collection(db, "bets"),
+          where("userId", "==", userId)
+        );
+        const betsSnapshot = await getDocs(betsQuery);
+        const betsData = betsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        betsData.sort((a, b) => {
+          const aTime = a.createdAt?.seconds || 0;
+          const bTime = b.createdAt?.seconds || 0;
+          return bTime - aTime;
+        });
+        setBets(betsData);
+      } catch (betsError) {
+        logger.error("Error loading bets:", betsError);
+        setBets([]);
+      }
 
       const eventsSnapshot = await getDocs(collection(db, "events"));
       const eventsData = {};
@@ -77,7 +91,10 @@ export default function UserProfile() {
       setMatches(matchesData);
     } catch (error) {
       logger.error("Error loading profile:", error);
-      alert("Error loading profile: " + error.message);
+      // Ne pas afficher d'alerte pour les erreurs de permissions sur les bets
+      if (!error.message.includes("permissions")) {
+        alert("Error loading profile: " + error.message);
+      }
     }
     setLoading(false);
   }
@@ -109,12 +126,12 @@ export default function UserProfile() {
   async function handleChangePassword(e) {
     e.preventDefault();
     setError("");
-    
+
     if (passwordData.new !== passwordData.confirm) {
       setError("New passwords don't match");
       return;
     }
-    
+
     if (passwordData.new.length < 6) {
       setError("Password must be at least 6 characters");
       return;
@@ -166,24 +183,31 @@ export default function UserProfile() {
       Jungle: { correct: 0, total: 0 },
       Mid: { correct: 0, total: 0 },
       Bot: { correct: 0, total: 0 },
-      Support: { correct: 0, total: 0 }
+      Support: { correct: 0, total: 0 },
     };
-    
-    const championStats = {};
-    const perfectScores = bets.filter(b => b.isPerfectScore === true).length;
-    const winRate = scoredBets.length > 0 
-      ? ((scoredBets.filter(b => (b.score || 0) >= 5).length / scoredBets.length) * 100).toFixed(1)
-      : 0;
 
-    scoredBets.forEach(bet => {
+    const championStats = {};
+    const perfectScores = bets.filter((b) => b.isPerfectScore === true).length;
+    const winRate =
+      scoredBets.length > 0
+        ? (
+            (scoredBets.filter((b) => (b.score || 0) >= 5).length /
+              scoredBets.length) *
+            100
+          ).toFixed(1)
+        : 0;
+
+    scoredBets.forEach((bet) => {
       const match = matches[bet.matchId];
       if (!match || !match.resultDraft) return;
 
       const roles = ["Top", "Jungle", "Mid", "Bot", "Support"];
-      
-      roles.forEach(role => {
+
+      roles.forEach((role) => {
         roleStats[role].total += 1;
-        if (bet.predictions?.team1?.[role] === match.resultDraft.team1?.[role]) {
+        if (
+          bet.predictions?.team1?.[role] === match.resultDraft.team1?.[role]
+        ) {
           roleStats[role].correct += 1;
           const champ = bet.predictions.team1[role];
           if (champ) {
@@ -204,9 +228,11 @@ export default function UserProfile() {
         }
       });
 
-      roles.forEach(role => {
+      roles.forEach((role) => {
         roleStats[role].total += 1;
-        if (bet.predictions?.team2?.[role] === match.resultDraft.team2?.[role]) {
+        if (
+          bet.predictions?.team2?.[role] === match.resultDraft.team2?.[role]
+        ) {
           roleStats[role].correct += 1;
           const champ = bet.predictions.team2[role];
           if (champ) {
@@ -229,19 +255,21 @@ export default function UserProfile() {
     });
 
     const roleAccuracy = {};
-    Object.keys(roleStats).forEach(role => {
+    Object.keys(roleStats).forEach((role) => {
       const stats = roleStats[role];
-      roleAccuracy[role] = stats.total > 0 
-        ? ((stats.correct / stats.total) * 100).toFixed(1)
-        : 0;
+      roleAccuracy[role] =
+        stats.total > 0 ? ((stats.correct / stats.total) * 100).toFixed(1) : 0;
     });
 
     const topChampions = Object.entries(championStats)
       .map(([champ, stats]) => ({
         name: champ,
-        accuracy: stats.total > 0 ? ((stats.correct / stats.total) * 100).toFixed(1) : 0,
+        accuracy:
+          stats.total > 0
+            ? ((stats.correct / stats.total) * 100).toFixed(1)
+            : 0,
         total: stats.total,
-        correct: stats.correct
+        correct: stats.correct,
       }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
@@ -250,7 +278,7 @@ export default function UserProfile() {
       roleAccuracy,
       topChampions,
       perfectScores,
-      winRate
+      winRate,
     };
   };
 
@@ -273,7 +301,7 @@ export default function UserProfile() {
   function handleSocialClick(e, webUrl, platform) {
     e.preventDefault();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
+
     if (isMobile) {
       let deepLink = null;
       if (platform === "twitter") {
@@ -283,17 +311,17 @@ export default function UserProfile() {
         const username = webUrl.split("/").pop();
         deepLink = `instagram://user?username=${username}`;
       }
-      
+
       if (deepLink) {
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
         iframe.src = deepLink;
         document.body.appendChild(iframe);
-        
+
         setTimeout(() => {
           document.body.removeChild(iframe);
         }, 500);
-        
+
         setTimeout(() => {
           window.open(webUrl, "_blank", "noopener,noreferrer");
         }, 800);
@@ -306,7 +334,9 @@ export default function UserProfile() {
   }
 
   const twitterWebUrl = socials.twitter ? getTwitterUrl(socials.twitter) : null;
-  const instagramWebUrl = socials.instagram ? getInstagramUrl(socials.instagram) : null;
+  const instagramWebUrl = socials.instagram
+    ? getInstagramUrl(socials.instagram)
+    : null;
 
   return (
     <div className="user-profile">
@@ -383,8 +413,12 @@ export default function UserProfile() {
       {currentUser && currentUser.uid === user.id && isEditing && (
         <div className="edit-profile card">
           <h3>Edit Profile</h3>
-          {error && <div className="alert error" style={{ marginBottom: "1rem" }}>{error}</div>}
-          
+          {error && (
+            <div className="alert error" style={{ marginBottom: "1rem" }}>
+              {error}
+            </div>
+          )}
+
           <div className="form-section" style={{ marginBottom: "2rem" }}>
             <h4>Socials</h4>
             <div className="form-group">
@@ -392,10 +426,19 @@ export default function UserProfile() {
               <input
                 type="text"
                 value={editSocials.twitter}
-                onChange={(e) => setEditSocials({ ...editSocials, twitter: e.target.value })}
+                onChange={(e) =>
+                  setEditSocials({ ...editSocials, twitter: e.target.value })
+                }
                 placeholder="tomhrt1 (sans @)"
               />
-              <small style={{ display: "block", marginTop: "4px", opacity: 0.7, fontSize: "0.85rem" }}>
+              <small
+                style={{
+                  display: "block",
+                  marginTop: "4px",
+                  opacity: 0.7,
+                  fontSize: "0.85rem",
+                }}
+              >
                 Just enter your username (e.g., tomhrt1)
               </small>
             </div>
@@ -404,10 +447,19 @@ export default function UserProfile() {
               <input
                 type="text"
                 value={editSocials.instagram}
-                onChange={(e) => setEditSocials({ ...editSocials, instagram: e.target.value })}
+                onChange={(e) =>
+                  setEditSocials({ ...editSocials, instagram: e.target.value })
+                }
                 placeholder="tomhrt1"
               />
-              <small style={{ display: "block", marginTop: "4px", opacity: 0.7, fontSize: "0.85rem" }}>
+              <small
+                style={{
+                  display: "block",
+                  marginTop: "4px",
+                  opacity: 0.7,
+                  fontSize: "0.85rem",
+                }}
+              >
                 Just enter your username (e.g., tomhrt1)
               </small>
             </div>
@@ -416,7 +468,9 @@ export default function UserProfile() {
               <input
                 type="text"
                 value={editSocials.discord}
-                onChange={(e) => setEditSocials({ ...editSocials, discord: e.target.value })}
+                onChange={(e) =>
+                  setEditSocials({ ...editSocials, discord: e.target.value })
+                }
                 placeholder="Username#1234"
               />
             </div>
@@ -437,7 +491,12 @@ export default function UserProfile() {
                 <input
                   type="password"
                   value={passwordData.current}
-                  onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      current: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -446,7 +505,9 @@ export default function UserProfile() {
                 <input
                   type="password"
                   value={passwordData.new}
-                  onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, new: e.target.value })
+                  }
                   required
                   minLength={6}
                 />
@@ -456,16 +517,17 @@ export default function UserProfile() {
                 <input
                   type="password"
                   value={passwordData.confirm}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      confirm: e.target.value,
+                    })
+                  }
                   required
                   minLength={6}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className="btn-primary"
-              >
+              <button type="submit" disabled={saving} className="btn-primary">
                 {saving ? "Changing..." : "Change Password"}
               </button>
             </form>
@@ -478,7 +540,7 @@ export default function UserProfile() {
           <h3>Socials</h3>
           <div className="stats-grid">
             {socials.twitter && twitterWebUrl && (
-              <div 
+              <div
                 className="stat-item"
                 onClick={(e) => handleSocialClick(e, twitterWebUrl, "twitter")}
                 style={{ cursor: "pointer" }}
@@ -509,9 +571,11 @@ export default function UserProfile() {
               </div>
             )}
             {socials.instagram && instagramWebUrl && (
-              <div 
+              <div
                 className="stat-item"
-                onClick={(e) => handleSocialClick(e, instagramWebUrl, "instagram")}
+                onClick={(e) =>
+                  handleSocialClick(e, instagramWebUrl, "instagram")
+                }
                 style={{ cursor: "pointer" }}
               >
                 <span className="stat-label">Instagram</span>
@@ -573,12 +637,15 @@ export default function UserProfile() {
       {user.badges && user.badges.length > 0 && (
         <div className="badges-section card">
           <h3>Achievements</h3>
-          <div className="badges-grid" style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-            gap: "1rem",
-            marginTop: "1rem"
-          }}>
+          <div
+            className="badges-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+              gap: "1rem",
+              marginTop: "1rem",
+            }}
+          >
             {user.badges.map((badge) => (
               <div
                 key={badge.id}
@@ -593,7 +660,7 @@ export default function UserProfile() {
                   borderRadius: "var(--radius-md)",
                   border: "1px solid var(--border-primary)",
                   transition: "all var(--transition-base)",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "var(--accent-primary)";
@@ -610,7 +677,7 @@ export default function UserProfile() {
                   className="badge-icon"
                   style={{
                     fontSize: "2.5rem",
-                    marginBottom: "0.5rem"
+                    marginBottom: "0.5rem",
                   }}
                 >
                   {badge.icon}
@@ -621,7 +688,7 @@ export default function UserProfile() {
                     fontSize: "0.875rem",
                     fontWeight: 500,
                     color: "var(--text-primary)",
-                    textAlign: "center"
+                    textAlign: "center",
                   }}
                 >
                   {badge.name}
@@ -635,21 +702,29 @@ export default function UserProfile() {
       {/* Main Content Card with Tabs */}
       <div className="card">
         {/* Tabs Navigation */}
-        <div className="profile-tabs" style={{
-          display: "flex",
-          gap: "0.5rem",
-          borderBottom: "1px solid var(--border-primary)",
-          paddingBottom: "0.5rem",
-          marginBottom: "1.5rem"
-        }}>
+        <div
+          className="profile-tabs"
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            borderBottom: "1px solid var(--border-primary)",
+            paddingBottom: "0.5rem",
+            marginBottom: "1.5rem",
+          }}
+        >
           <button
             onClick={() => setActiveTab("overview")}
-            className={activeTab === "overview" ? "btn-primary" : "btn-secondary"}
+            className={
+              activeTab === "overview" ? "btn-primary" : "btn-secondary"
+            }
             style={{
-              borderBottom: activeTab === "overview" ? "2px solid var(--accent-primary)" : "none",
+              borderBottom:
+                activeTab === "overview"
+                  ? "2px solid var(--accent-primary)"
+                  : "none",
               borderRadius: "0",
               borderBottomLeftRadius: "var(--radius-sm)",
-              borderBottomRightRadius: "var(--radius-sm)"
+              borderBottomRightRadius: "var(--radius-sm)",
             }}
           >
             Overview
@@ -658,10 +733,13 @@ export default function UserProfile() {
             onClick={() => setActiveTab("stats")}
             className={activeTab === "stats" ? "btn-primary" : "btn-secondary"}
             style={{
-              borderBottom: activeTab === "stats" ? "2px solid var(--accent-primary)" : "none",
+              borderBottom:
+                activeTab === "stats"
+                  ? "2px solid var(--accent-primary)"
+                  : "none",
               borderRadius: "0",
               borderBottomLeftRadius: "var(--radius-sm)",
-              borderBottomRightRadius: "var(--radius-sm)"
+              borderBottomRightRadius: "var(--radius-sm)",
             }}
           >
             Statistics
@@ -670,10 +748,13 @@ export default function UserProfile() {
             onClick={() => setActiveTab("bets")}
             className={activeTab === "bets" ? "btn-primary" : "btn-secondary"}
             style={{
-              borderBottom: activeTab === "bets" ? "2px solid var(--accent-primary)" : "none",
+              borderBottom:
+                activeTab === "bets"
+                  ? "2px solid var(--accent-primary)"
+                  : "none",
               borderRadius: "0",
               borderBottomLeftRadius: "var(--radius-sm)",
-              borderBottomRightRadius: "var(--radius-sm)"
+              borderBottomRightRadius: "var(--radius-sm)",
             }}
           >
             All Bets
@@ -718,12 +799,299 @@ export default function UserProfile() {
             )}
 
             <div className="recent-bets" style={{ marginTop: "1.5rem" }}>
-            <h3>Recent Bets</h3>
+              <h3>Recent Bets</h3>
+              {bets.length === 0 ? (
+                <p>No bets placed yet</p>
+              ) : (
+                <div className="bets-list">
+                  {bets.slice(0, 10).map((bet) => {
+                    const match = matches[bet.matchId];
+                    if (!match) return null;
+
+                    return (
+                      <div key={bet.id} className="bet-item">
+                        <div className="bet-match">
+                          <strong>
+                            {match.team1} vs {match.team2}
+                          </strong>
+                          <span className={`status-badge ${match.status}`}>
+                            {match.status}
+                          </span>
+                        </div>
+                        <div className="bet-score">
+                          {bet.score !== null && bet.score !== undefined ? (
+                            <span className="score-earned">
+                              {bet.score} pts
+                            </span>
+                          ) : (
+                            <span className="score-pending">Pending</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Statistics Tab */}
+        {activeTab === "stats" && (
+          <div className="advanced-stats">
+            <h3>Advanced Statistics</h3>
+
+            {/* Key Metrics */}
+            <div
+              className="stats-overview"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "1rem",
+                marginBottom: "2rem",
+              }}
+            >
+              <div
+                className="stat-card"
+                style={{
+                  padding: "1.5rem",
+                  backgroundColor: "var(--bg-secondary)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-primary)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "var(--text-secondary)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  Win Rate
+                </div>
+                <div
+                  style={{
+                    fontSize: "2rem",
+                    fontWeight: 700,
+                    color: "var(--accent-primary)",
+                  }}
+                >
+                  {advancedStats.winRate}%
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    marginTop: "0.25rem",
+                  }}
+                >
+                  {scoredBets.filter((b) => (b.score || 0) >= 5).length} /{" "}
+                  {scoredBets.length} bets
+                </div>
+              </div>
+
+              <div
+                className="stat-card"
+                style={{
+                  padding: "1.5rem",
+                  backgroundColor: "var(--bg-secondary)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-primary)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "var(--text-secondary)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  Perfect Scores
+                </div>
+                <div
+                  style={{
+                    fontSize: "2rem",
+                    fontWeight: 700,
+                    color: "var(--accent-gold)",
+                  }}
+                >
+                  {advancedStats.perfectScores}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    marginTop: "0.25rem",
+                  }}
+                >
+                  10/10 points
+                </div>
+              </div>
+
+              <div
+                className="stat-card"
+                style={{
+                  padding: "1.5rem",
+                  backgroundColor: "var(--bg-secondary)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-primary)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "var(--text-secondary)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  Average Score
+                </div>
+                <div
+                  style={{
+                    fontSize: "2rem",
+                    fontWeight: 700,
+                    color: "var(--accent-primary)",
+                  }}
+                >
+                  {avgScore}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    marginTop: "0.25rem",
+                  }}
+                >
+                  per bet
+                </div>
+              </div>
+            </div>
+
+            {/* Accuracy by Role */}
+            <div
+              className="role-stats-section"
+              style={{ marginBottom: "2rem" }}
+            >
+              <h3 style={{ marginBottom: "1rem" }}>Accuracy by Role</h3>
+              <div
+                className="role-stats-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                  gap: "1rem",
+                }}
+              >
+                {Object.entries(advancedStats.roleAccuracy).map(
+                  ([role, accuracy]) => (
+                    <div
+                      key={role}
+                      style={{
+                        padding: "1rem",
+                        backgroundColor: "var(--bg-secondary)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--border-primary)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          color: "var(--text-secondary)",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        {role}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "1.5rem",
+                          fontWeight: 600,
+                          color: "var(--accent-primary)",
+                        }}
+                      >
+                        {accuracy}%
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* Top Predicted Champions */}
+            {advancedStats.topChampions.length > 0 && (
+              <div className="champion-stats-section">
+                <h4 style={{ marginBottom: "1rem" }}>
+                  Most Predicted Champions
+                </h4>
+                <div
+                  className="champions-list"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(200px, 1fr))",
+                    gap: "1rem",
+                  }}
+                >
+                  {advancedStats.topChampions.map((champ) => (
+                    <div
+                      key={champ.name}
+                      style={{
+                        padding: "1rem",
+                        backgroundColor: "var(--bg-secondary)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--border-primary)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 600,
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        {champ.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        Accuracy:{" "}
+                        <span
+                          style={{
+                            color: "var(--accent-primary)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {champ.accuracy}%
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-muted)",
+                          marginTop: "0.25rem",
+                        }}
+                      >
+                        {champ.correct} / {champ.total} correct
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* All Bets Tab */}
+        {activeTab === "bets" && (
+          <div className="all-bets">
+            <h3>All Bets</h3>
             {bets.length === 0 ? (
               <p>No bets placed yet</p>
             ) : (
               <div className="bets-list">
-                {bets.slice(0, 10).map((bet) => {
+                {bets.map((bet) => {
                   const match = matches[bet.matchId];
                   if (!match) return null;
 
@@ -739,7 +1107,19 @@ export default function UserProfile() {
                       </div>
                       <div className="bet-score">
                         {bet.score !== null && bet.score !== undefined ? (
-                          <span className="score-earned">{bet.score} pts</span>
+                          <span className="score-earned">
+                            {bet.score} pts
+                            {bet.isPerfectScore && (
+                              <span
+                                style={{
+                                  marginLeft: "0.5rem",
+                                  color: "var(--accent-gold)",
+                                }}
+                              >
+                                ⭐ Perfect!
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <span className="score-pending">Pending</span>
                         )}
@@ -749,172 +1129,6 @@ export default function UserProfile() {
                 })}
               </div>
             )}
-          </div>
-        </>
-      )}
-
-        {/* Statistics Tab */}
-        {activeTab === "stats" && (
-          <div className="advanced-stats">
-          <h3>Advanced Statistics</h3>
-          
-          {/* Key Metrics */}
-          <div className="stats-overview" style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1rem",
-            marginBottom: "2rem"
-          }}>
-            <div className="stat-card" style={{
-              padding: "1.5rem",
-              backgroundColor: "var(--bg-secondary)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-primary)"
-            }}>
-              <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Win Rate</div>
-              <div style={{ fontSize: "2rem", fontWeight: 700, color: "var(--accent-primary)" }}>
-                {advancedStats.winRate}%
-              </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                {scoredBets.filter(b => (b.score || 0) >= 5).length} / {scoredBets.length} bets
-              </div>
-            </div>
-            
-            <div className="stat-card" style={{
-              padding: "1.5rem",
-              backgroundColor: "var(--bg-secondary)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-primary)"
-            }}>
-              <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Perfect Scores</div>
-              <div style={{ fontSize: "2rem", fontWeight: 700, color: "var(--accent-gold)" }}>
-                {advancedStats.perfectScores}
-              </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                10/10 points
-              </div>
-            </div>
-            
-            <div className="stat-card" style={{
-              padding: "1.5rem",
-              backgroundColor: "var(--bg-secondary)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-primary)"
-            }}>
-              <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Average Score</div>
-              <div style={{ fontSize: "2rem", fontWeight: 700, color: "var(--accent-primary)" }}>
-                {avgScore}
-              </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                per bet
-              </div>
-            </div>
-          </div>
-
-          {/* Accuracy by Role */}
-          <div className="role-stats-section" style={{ marginBottom: "2rem" }}>
-            <h3 style={{ marginBottom: "1rem" }}>Accuracy by Role</h3>
-            <div className="role-stats-grid" style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: "1rem"
-            }}>
-              {Object.entries(advancedStats.roleAccuracy).map(([role, accuracy]) => (
-                <div
-                  key={role}
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-secondary)",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--border-primary)"
-                  }}
-                >
-                  <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                    {role}
-                  </div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 600, color: "var(--accent-primary)" }}>
-                    {accuracy}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Predicted Champions */}
-          {advancedStats.topChampions.length > 0 && (
-            <div className="champion-stats-section">
-              <h4 style={{ marginBottom: "1rem" }}>Most Predicted Champions</h4>
-              <div className="champions-list" style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                gap: "1rem"
-              }}>
-                {advancedStats.topChampions.map((champ) => (
-                  <div
-                    key={champ.name}
-                    style={{
-                      padding: "1rem",
-                      backgroundColor: "var(--bg-secondary)",
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--border-primary)"
-                    }}
-                  >
-                    <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-                      {champ.name}
-                    </div>
-                    <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-                      Accuracy: <span style={{ color: "var(--accent-primary)", fontWeight: 600 }}>{champ.accuracy}%</span>
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                      {champ.correct} / {champ.total} correct
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          </div>
-        )}
-
-        {/* All Bets Tab */}
-        {activeTab === "bets" && (
-          <div className="all-bets">
-          <h3>All Bets</h3>
-          {bets.length === 0 ? (
-            <p>No bets placed yet</p>
-          ) : (
-            <div className="bets-list">
-              {bets.map((bet) => {
-                const match = matches[bet.matchId];
-                if (!match) return null;
-
-                return (
-                  <div key={bet.id} className="bet-item">
-                    <div className="bet-match">
-                      <strong>
-                        {match.team1} vs {match.team2}
-                      </strong>
-                      <span className={`status-badge ${match.status}`}>
-                        {match.status}
-                      </span>
-                    </div>
-                    <div className="bet-score">
-                      {bet.score !== null && bet.score !== undefined ? (
-                        <span className="score-earned">
-                          {bet.score} pts
-                          {bet.isPerfectScore && (
-                            <span style={{ marginLeft: "0.5rem", color: "var(--accent-gold)" }}>⭐ Perfect!</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="score-pending">Pending</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
           </div>
         )}
       </div>

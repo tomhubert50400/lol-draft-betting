@@ -39,9 +39,8 @@ service cloud.firestore {
     
     // Bets collection
     match /bets/{betId} {
-      // Users can read their own bets, admins can read all bets
-      allow read: if isSignedIn() && 
-                     (request.auth.uid == resource.data.userId || isAdmin());
+      // Anyone can read bets (for viewing profiles and leaderboards)
+      allow read: if true;
       
       // Users can create bets for themselves
       allow create: if isSignedIn() && 
