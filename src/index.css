@@ -262,10 +262,11 @@ a:hover {
     opacity: 0;
     transform: translateX(-8px);
     transition: width 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+    min-width: 0;
 }
 
 .nav-search.open .nav-search-input {
-    width: 220px;
+    width: 280px;
     opacity: 1;
     transform: translateX(0);
 }
