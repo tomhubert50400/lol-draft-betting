@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [eventDescription, setEventDescription] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const [showClosedEvents, setShowClosedEvents] = useState(false);
+  const [showCompletedMatches, setShowCompletedMatches] = useState(false);
 
   const [team1, setTeam1] = useState("");
   const [team2, setTeam2] = useState("");
@@ -32,11 +33,16 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [resolvingMatch, setResolvingMatch] = useState(null);
   const [resultDraft, setResultDraft] = useState({ team1: {}, team2: {} });
-  const [excludedChampionsFromSeries, setExcludedChampionsFromSeries] = useState([]);
+  const [excludedChampionsFromSeries, setExcludedChampionsFromSeries] =
+    useState([]);
 
   useEffect(() => {
     async function getExcludedChampionsFromSeries() {
-      if (!resolvingMatch || !resolvingMatch.seriesId || !resolvingMatch.gameNumber) {
+      if (
+        !resolvingMatch ||
+        !resolvingMatch.seriesId ||
+        !resolvingMatch.gameNumber
+      ) {
         setExcludedChampionsFromSeries([]);
         return;
       }
@@ -48,27 +54,30 @@ export default function AdminDashboard() {
           where("status", "==", "completed")
         );
         const seriesMatchesSnapshot = await getDocs(seriesMatchesQuery);
-        
+
         const excludedChampions = [];
         seriesMatchesSnapshot.forEach((doc) => {
           const matchData = doc.data();
-          if (matchData.gameNumber && matchData.gameNumber < resolvingMatch.gameNumber) {
+          if (
+            matchData.gameNumber &&
+            matchData.gameNumber < resolvingMatch.gameNumber
+          ) {
             const resultDraft = matchData.resultDraft;
             if (resultDraft) {
               if (resultDraft.team1) {
-                Object.values(resultDraft.team1).forEach(champ => {
+                Object.values(resultDraft.team1).forEach((champ) => {
                   if (champ) excludedChampions.push(champ);
                 });
               }
               if (resultDraft.team2) {
-                Object.values(resultDraft.team2).forEach(champ => {
+                Object.values(resultDraft.team2).forEach((champ) => {
                   if (champ) excludedChampions.push(champ);
                 });
               }
             }
           }
         });
-        
+
         setExcludedChampionsFromSeries([...new Set(excludedChampions)]);
       } catch (error) {
         logger.error("Error fetching excluded champions from series:", error);
@@ -150,7 +159,9 @@ export default function AdminDashboard() {
     const currentBestOf = bestOf;
     const currentEventId = selectedEventId;
 
-    const seriesId = `series-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const seriesId = `series-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
 
     const tempId = "temp-" + Date.now();
     const newMatch = {
@@ -266,9 +277,9 @@ export default function AdminDashboard() {
         }
 
         const betRef = doc(db, "bets", betDoc.id);
-        batch.update(betRef, { 
+        batch.update(betRef, {
           score: score,
-          isPerfectScore: perfectScore && score === 12
+          isPerfectScore: perfectScore && score === 12,
         });
 
         if (!userEventScores[betData.userId]) {
@@ -317,54 +328,63 @@ export default function AdminDashboard() {
 
           const currentBadges = userData.badges || [];
           const newBadges = [...currentBadges];
-          
-          if (totalBets >= 1 && !newBadges.find(b => b.id === 'first_bet')) {
+
+          if (totalBets >= 1 && !newBadges.find((b) => b.id === "first_bet")) {
             newBadges.push({
-              id: 'first_bet',
-              name: 'First Bet',
-              icon: '🎯',
-              description: 'Placed your first bet',
-              unlockedAt: new Date()
+              id: "first_bet",
+              name: "First Bet",
+              icon: "🎯",
+              description: "Placed your first bet",
+              unlockedAt: new Date(),
             });
           }
 
-          if (hasPerfectScore && !newBadges.find(b => b.id === 'perfect_score')) {
+          if (
+            hasPerfectScore &&
+            !newBadges.find((b) => b.id === "perfect_score")
+          ) {
             newBadges.push({
-              id: 'perfect_score',
-              name: 'Perfect Score',
-              icon: '⭐',
-              description: 'Achieved a perfect 10/10 score',
-              unlockedAt: new Date()
+              id: "perfect_score",
+              name: "Perfect Score",
+              icon: "⭐",
+              description: "Achieved a perfect 10/10 score",
+              unlockedAt: new Date(),
             });
           }
 
-          if (totalBets >= 10 && !newBadges.find(b => b.id === 'dedicated_bettor')) {
+          if (
+            totalBets >= 10 &&
+            !newBadges.find((b) => b.id === "dedicated_bettor")
+          ) {
             newBadges.push({
-              id: 'dedicated_bettor',
-              name: 'Dedicated Bettor',
-              icon: '🔥',
-              description: 'Placed 10 bets',
-              unlockedAt: new Date()
+              id: "dedicated_bettor",
+              name: "Dedicated Bettor",
+              icon: "🔥",
+              description: "Placed 10 bets",
+              unlockedAt: new Date(),
             });
           }
 
-          if (totalBets >= 50 && !newBadges.find(b => b.id === 'veteran')) {
+          if (totalBets >= 50 && !newBadges.find((b) => b.id === "veteran")) {
             newBadges.push({
-              id: 'veteran',
-              name: 'Veteran',
-              icon: '🏅',
-              description: 'Placed 50 bets',
-              unlockedAt: new Date()
+              id: "veteran",
+              name: "Veteran",
+              icon: "🏅",
+              description: "Placed 50 bets",
+              unlockedAt: new Date(),
             });
           }
 
-          if (newTotalScore >= 1000 && !newBadges.find(b => b.id === 'top_scorer')) {
+          if (
+            newTotalScore >= 1000 &&
+            !newBadges.find((b) => b.id === "top_scorer")
+          ) {
             newBadges.push({
-              id: 'top_scorer',
-              name: 'Top Scorer',
-              icon: '💎',
-              description: 'Reached 1000+ total points',
-              unlockedAt: new Date()
+              id: "top_scorer",
+              name: "Top Scorer",
+              icon: "💎",
+              description: "Reached 1000+ total points",
+              unlockedAt: new Date(),
             });
           }
 
@@ -374,19 +394,23 @@ export default function AdminDashboard() {
             const data = doc.data();
             allUsers.push({
               id: doc.id,
-              totalScore: data.totalScore || 0
+              totalScore: data.totalScore || 0,
             });
           });
           allUsers.sort((a, b) => b.totalScore - a.totalScore);
-          const userRank = allUsers.findIndex(u => u.id === userId) + 1;
-          
-          if (userRank <= 10 && userRank > 0 && !newBadges.find(b => b.id === 'top_10')) {
+          const userRank = allUsers.findIndex((u) => u.id === userId) + 1;
+
+          if (
+            userRank <= 10 &&
+            userRank > 0 &&
+            !newBadges.find((b) => b.id === "top_10")
+          ) {
             newBadges.push({
-              id: 'top_10',
-              name: 'Top 10',
-              icon: '🏆',
-              description: 'Ranked in the top 10 globally',
-              unlockedAt: new Date()
+              id: "top_10",
+              name: "Top 10",
+              icon: "🏆",
+              description: "Ranked in the top 10 globally",
+              unlockedAt: new Date(),
             });
           }
 
@@ -401,14 +425,14 @@ export default function AdminDashboard() {
       const bestOf = resolvingMatch.bestOf || "bo1";
       const currentGameNumber = resolvingMatch.gameNumber || 1;
       const seriesId = resolvingMatch.seriesId;
-      
+
       let maxGames = 1;
       if (bestOf === "bo3") maxGames = 3;
       if (bestOf === "bo5") maxGames = 5;
 
       if (currentGameNumber < maxGames && seriesId) {
         const nextGameNumber = currentGameNumber + 1;
-        
+
         await addDoc(collection(db, "matches"), {
           eventId: resolvingMatch.eventId,
           team1: resolvingMatch.team1,
@@ -420,8 +444,10 @@ export default function AdminDashboard() {
           createdAt: serverTimestamp(),
           resultDraft: null,
         });
-        
-        alert(`Match resolved and scores calculated! Game ${nextGameNumber} has been automatically created.`);
+
+        alert(
+          `Match resolved and scores calculated! Game ${nextGameNumber} has been automatically created.`
+        );
       } else {
         alert("Match resolved and scores calculated!");
       }
@@ -458,7 +484,7 @@ export default function AdminDashboard() {
       betsSnapshot.forEach((betDoc) => {
         const betData = betDoc.data();
         const score = betData.score || 0;
-        
+
         if (score > 0 && betData.userId) {
           if (!userScoresToSubtract[betData.userId]) {
             userScoresToSubtract[betData.userId] = 0;
@@ -467,28 +493,36 @@ export default function AdminDashboard() {
         }
       });
 
-      for (const [userId, scoreToSubtract] of Object.entries(userScoresToSubtract)) {
+      for (const [userId, scoreToSubtract] of Object.entries(
+        userScoresToSubtract
+      )) {
         const userRef = doc(db, "users", userId);
         const userDoc = await getDoc(userRef);
-        
+
         if (userDoc.exists()) {
           const userData = userDoc.data();
           const currentTotalScore = userData.totalScore || 0;
-          const newTotalScore = Math.max(0, currentTotalScore - scoreToSubtract);
-          
+          const newTotalScore = Math.max(
+            0,
+            currentTotalScore - scoreToSubtract
+          );
+
           let eventScores = userData.eventScores || {};
           if (eventId && eventScores[eventId]) {
             const currentEventScore = eventScores[eventId] || 0;
-            const newEventScore = Math.max(0, currentEventScore - scoreToSubtract);
+            const newEventScore = Math.max(
+              0,
+              currentEventScore - scoreToSubtract
+            );
             eventScores = {
               ...eventScores,
-              [eventId]: newEventScore
+              [eventId]: newEventScore,
             };
           }
 
           await updateDoc(userRef, {
             totalScore: newTotalScore,
-            eventScores: eventScores
+            eventScores: eventScores,
           });
         }
       }
@@ -501,7 +535,9 @@ export default function AdminDashboard() {
       await deleteDoc(matchRef);
 
       logger.log("Match deleted successfully");
-      alert("Match and all associated bets deleted. User scores have been adjusted.");
+      alert(
+        "Match and all associated bets deleted. User scores have been adjusted."
+      );
     } catch (error) {
       logger.error("Error deleting match:", error);
       setMatches(previousMatches);
@@ -541,7 +577,7 @@ export default function AdminDashboard() {
           collection(db, "bets"),
           where("matchId", "==", matchDoc.id)
         );
-        const betsSnapshot =           await getDocs(betsQuery);
+        const betsSnapshot = await getDocs(betsQuery);
 
         for (const betDoc of betsSnapshot.docs) {
           await deleteDoc(doc(db, "bets", betDoc.id));
@@ -666,11 +702,17 @@ export default function AdminDashboard() {
                   }}
                 >
                   <div className="event-item-header">
-                    <div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.5rem",
+                      }}
+                    >
                       <strong>{event.name}</strong>
                       <span
                         className={`status-badge ${event.status}`}
-                        style={{ marginLeft: "10px" }}
+                        style={{ alignSelf: "flex-start", marginLeft: "-10px" }}
                       >
                         {event.status}
                       </span>
@@ -775,14 +817,18 @@ export default function AdminDashboard() {
           <h3>
             Resolving: {resolvingMatch.team1} vs {resolvingMatch.team2}
             {resolvingMatch.bestOf && (
-              <span style={{ 
-                marginLeft: "0.5rem", 
-                fontSize: "0.875rem", 
-                color: "var(--text-secondary)",
-                fontWeight: "normal"
-              }}>
+              <span
+                style={{
+                  marginLeft: "0.5rem",
+                  fontSize: "0.875rem",
+                  color: "var(--text-secondary)",
+                  fontWeight: "normal",
+                }}
+              >
                 ({resolvingMatch.bestOf.toUpperCase()}
-                {resolvingMatch.gameNumber && ` - Game ${resolvingMatch.gameNumber}`})
+                {resolvingMatch.gameNumber &&
+                  ` - Game ${resolvingMatch.gameNumber}`}
+                )
               </span>
             )}
           </h3>
@@ -795,7 +841,7 @@ export default function AdminDashboard() {
               }
               excludedChampions={[
                 ...Object.values(resultDraft.team2).filter(Boolean),
-                ...excludedChampionsFromSeries
+                ...excludedChampionsFromSeries,
               ]}
             />
             <DraftSelector
@@ -806,7 +852,7 @@ export default function AdminDashboard() {
               }
               excludedChampions={[
                 ...Object.values(resultDraft.team1).filter(Boolean),
-                ...excludedChampionsFromSeries
+                ...excludedChampionsFromSeries,
               ]}
             />
           </div>
@@ -829,70 +875,91 @@ export default function AdminDashboard() {
       )}
 
       <div className="matches-list">
-        <h3>Matches</h3>
-        {matches.map((match) => (
-          <div key={match.id} className="match-card card">
-            <div className="match-header">
-              <h4>
-                {match.team1} vs {match.team2}
-                {match.bestOf && (
-                  <span style={{ 
-                    marginLeft: "0.5rem", 
-                    fontSize: "0.875rem", 
-                    color: "var(--text-secondary)",
-                    fontWeight: "normal"
-                  }}>
-                    ({match.bestOf.toUpperCase()}
-                    {match.gameNumber && ` - Game ${match.gameNumber}`})
-                  </span>
-                )}
-              </h4>
-              <span className={`status-badge ${match.status}`}>
-                {match.status}
-              </span>
-            </div>
-            <div className="match-actions">
-              {match.status === "open" && (
-                <button
-                  onClick={() => updateMatchStatus(match.id, "locked")}
-                  className="btn-secondary"
-                >
-                  Lock Bets
-                </button>
-              )}
-              {match.status === "locked" && (
-                <>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1rem",
+          }}
+        >
+          <h3 style={{ margin: 0 }}>Matches</h3>
+          <button
+            onClick={() => setShowCompletedMatches(!showCompletedMatches)}
+            className="btn-secondary"
+          >
+            {showCompletedMatches ? "Hide Completed" : "Show Completed"}
+          </button>
+        </div>
+        {matches
+          .filter(
+            (match) => showCompletedMatches || match.status !== "completed"
+          )
+          .map((match) => (
+            <div key={match.id} className="match-card card">
+              <div className="match-header">
+                <h4>
+                  {match.team1} vs {match.team2}
+                  {match.bestOf && (
+                    <span
+                      style={{
+                        marginLeft: "0.5rem",
+                        fontSize: "0.875rem",
+                        color: "var(--text-secondary)",
+                        fontWeight: "normal",
+                      }}
+                    >
+                      ({match.bestOf.toUpperCase()}
+                      {match.gameNumber && ` - Game ${match.gameNumber}`})
+                    </span>
+                  )}
+                </h4>
+                <span className={`status-badge ${match.status}`}>
+                  {match.status}
+                </span>
+              </div>
+              <div className="match-actions">
+                {match.status === "open" && (
                   <button
-                    onClick={() => setResolvingMatch(match)}
+                    onClick={() => updateMatchStatus(match.id, "locked")}
                     className="btn-secondary"
                   >
-                    Resolve (Draft)
+                    Lock Bets
                   </button>
+                )}
+                {match.status === "locked" && (
+                  <>
+                    <button
+                      onClick={() => setResolvingMatch(match)}
+                      className="btn-secondary"
+                    >
+                      Resolve (Draft)
+                    </button>
+                    <button
+                      onClick={() => reopenBetting(match.id)}
+                      className="btn-secondary"
+                    >
+                      Reopen Betting
+                    </button>
+                  </>
+                )}
+                {match.status === "completed" && (
                   <button
                     onClick={() => reopenBetting(match.id)}
                     className="btn-secondary"
                   >
                     Reopen Betting
                   </button>
-                </>
-              )}
-              {match.status === "completed" && (
+                )}
                 <button
-                  onClick={() => reopenBetting(match.id)}
-                  className="btn-secondary"
+                  onClick={() => deleteMatch(match.id)}
+                  className="btn-delete"
                 >
-                  Reopen Betting
+                  Delete Match
                 </button>
-              )}
-              <button
-                onClick={() => deleteMatch(match.id)}
-                className="btn-delete"
-              >
-                Delete Match
-              </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );

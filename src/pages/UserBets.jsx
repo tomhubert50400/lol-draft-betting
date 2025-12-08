@@ -20,6 +20,7 @@ export default function UserBets() {
   const [matches, setMatches] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [expandedBetId, setExpandedBetId] = useState(null);
 
   useEffect(() => {
     if (userId) {
@@ -116,7 +117,7 @@ export default function UserBets() {
 
   if (loading) {
     return (
-      <div className="user-bets" style={{ padding: "2rem" }}>
+      <div className="user-bets" style={{ padding: "0.2rem" }}>
         <h2>Loading...</h2>
       </div>
     );
@@ -124,27 +125,27 @@ export default function UserBets() {
 
   if (!user) {
     return (
-      <div className="user-bets" style={{ padding: "2rem" }}>
+      <div className="user-bets" style={{ padding: "0.2rem" }}>
         <h2>User not found</h2>
       </div>
     );
   }
 
   return (
-    <div
-      className="user-bets"
-      style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}
-    >
+    <div className="user-bets" style={{ padding: "0.2rem" }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: "flex-start",
+          marginTop: "2rem",
           marginBottom: "2rem",
         }}
       >
         <div>
-          <h1>{user.username}'s Bets</h1>
+          <h1 style={{ margin: 0, display: "flex", alignItems: "center" }}>
+            {user.username}'s Bets
+          </h1>
           <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem" }}>
             Total: {bets.length} bets
           </p>
@@ -156,6 +157,7 @@ export default function UserBets() {
             display: "flex",
             alignItems: "center",
             gap: "8px",
+            alignSelf: "flex-start",
           }}
         >
           <svg
@@ -216,59 +218,91 @@ export default function UserBets() {
                 const match = matches[bet.matchId];
                 if (!match) return null;
 
+                const isExpanded = expandedBetId === bet.id;
+                const predictions = bet.predictions || { team1: {}, team2: {} };
+                const roles = ["Top", "Jungle", "Mid", "Bot", "Support"];
+
                 return (
                   <div
                     key={bet.id}
                     className="bet-item"
                     style={{
-                      padding: "1.5rem",
-                      marginBottom: "1rem",
                       backgroundColor: "var(--bg-secondary)",
-                      borderRadius: "var(--radius-md)",
                       border: "1px solid var(--border-primary)",
-                      transition: "all 0.2s",
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor =
-                        "var(--accent-primary)";
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow =
-                        "0 4px 12px rgba(10, 200, 185, 0.2)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor =
-                        "var(--border-primary)";
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
+                    onClick={() => setExpandedBetId(isExpanded ? null : bet.id)}
                   >
                     <div
+                      className="bet-header-mobile"
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "flex-start",
-                        marginBottom: "1rem",
+                        marginBottom: isExpanded ? "1rem" : "0",
                       }}
                     >
-                      <div>
-                        <strong style={{ fontSize: "1.1rem" }}>
-                          {match.team1} vs {match.team2}
-                        </strong>
-                        <span
-                          className={`status-badge ${match.status}`}
+                      <div style={{ flex: 1 }}>
+                        <div
                           style={{
-                            marginLeft: "1rem",
-                            padding: "4px 12px",
-                            borderRadius: "12px",
-                            fontSize: "0.875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: "0.5rem",
+                            marginBottom: "0.5rem",
                           }}
                         >
-                          {match.status}
-                        </span>
+                          <strong style={{ fontSize: "1.1rem" }}>
+                            {match.team1} vs {match.team2}
+                            {match.bestOf && (
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: "normal",
+                                  color: "var(--text-secondary)",
+                                  marginLeft: "0.5rem",
+                                }}
+                              >
+                                ({match.bestOf.toUpperCase()})
+                              </span>
+                            )}
+                          </strong>
+                          <span
+                            className={`status-badge ${match.status}`}
+                            style={{
+                              padding: "4px 12px",
+                              borderRadius: "12px",
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            {match.status}
+                          </span>
+                        </div>
+                        {bet.createdAt && (
+                          <div
+                            style={{
+                              fontSize: "0.875rem",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            {new Date(
+                              bet.createdAt.seconds * 1000
+                            ).toLocaleDateString("fr-FR", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                        )}
                       </div>
                       <div
                         style={{
                           textAlign: "right",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.75rem",
+                          flexShrink: 0,
                         }}
                       >
                         {bet.score !== null && bet.score !== undefined ? (
@@ -306,24 +340,360 @@ export default function UserBets() {
                             Pending
                           </span>
                         )}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="var(--accent-primary)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            transform: isExpanded
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                            transition: "transform 0.3s",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
                       </div>
                     </div>
-                    {bet.createdAt && (
+
+                    {isExpanded && (
                       <div
+                        className="bet-expanded-content"
                         style={{
-                          fontSize: "0.875rem",
-                          color: "var(--text-secondary)",
+                          marginTop: "1.5rem",
+                          paddingTop: "1.5rem",
+                          borderTop: "1px solid var(--border-primary)",
                         }}
                       >
-                        {new Date(
-                          bet.createdAt.seconds * 1000
-                        ).toLocaleDateString("fr-FR", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        <div className="bets-predictions-grid">
+                          {/* Team 1 Predictions */}
+                          <div>
+                            <h4
+                              className="bet-team-name-mobile"
+                              style={{
+                                marginBottom: "1rem",
+                                color: "var(--text-primary)",
+                                fontSize: "1rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {match.team1} - Predictions
+                            </h4>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "0.75rem",
+                              }}
+                            >
+                              {roles.map((role) => (
+                                <div
+                                  key={role}
+                                  className="bet-role-item-mobile"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "1rem",
+                                    padding: "0.5rem",
+                                    backgroundColor: "var(--bg-primary)",
+                                    borderRadius: "var(--radius-sm)",
+                                  }}
+                                >
+                                  <span
+                                    className="bet-role-label-mobile"
+                                    style={{
+                                      minWidth: "80px",
+                                      fontSize: "0.875rem",
+                                      color: "var(--text-secondary)",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {role}:
+                                  </span>
+                                  <span
+                                    className="bet-role-value-mobile"
+                                    style={{
+                                      fontSize: "1rem",
+                                      color: "var(--text-primary)",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {predictions.team1?.[role] || "—"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Team 2 Predictions */}
+                          <div>
+                            <h4
+                              className="bet-team-name-mobile"
+                              style={{
+                                marginBottom: "1rem",
+                                color: "var(--text-primary)",
+                                fontSize: "1rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {match.team2} - Predictions
+                            </h4>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "0.75rem",
+                              }}
+                            >
+                              {roles.map((role) => (
+                                <div
+                                  key={role}
+                                  className="bet-role-item-mobile"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "1rem",
+                                    padding: "0.5rem",
+                                    backgroundColor: "var(--bg-primary)",
+                                    borderRadius: "var(--radius-sm)",
+                                  }}
+                                >
+                                  <span
+                                    className="bet-role-label-mobile"
+                                    style={{
+                                      minWidth: "80px",
+                                      fontSize: "0.875rem",
+                                      color: "var(--text-secondary)",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {role}:
+                                  </span>
+                                  <span
+                                    className="bet-role-value-mobile"
+                                    style={{
+                                      fontSize: "1rem",
+                                      color: "var(--text-primary)",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {predictions.team2?.[role] || "—"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Show result draft if match is completed */}
+                        {match.status === "completed" && match.resultDraft && (
+                          <div
+                            style={{
+                              marginTop: "2rem",
+                              paddingTop: "1.5rem",
+                              borderTop: "1px solid var(--border-primary)",
+                            }}
+                          >
+                            <h4
+                              style={{
+                                marginBottom: "1rem",
+                                color: "var(--accent-primary)",
+                                fontSize: "1rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Actual Result
+                            </h4>
+                            <div className="bets-predictions-grid">
+                              {/* Team 1 Result */}
+                              <div>
+                                <h5
+                                  className="bet-team-name-mobile"
+                                  style={{
+                                    marginBottom: "0.75rem",
+                                    color: "var(--text-primary)",
+                                    fontSize: "0.9rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {match.team1}
+                                </h5>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "0.5rem",
+                                  }}
+                                >
+                                  {roles.map((role) => {
+                                    const predicted = predictions.team1?.[role];
+                                    const actual =
+                                      match.resultDraft.team1?.[role];
+                                    const isCorrect = predicted === actual;
+
+                                    return (
+                                      <div
+                                        key={role}
+                                        className="bet-role-item-mobile"
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "1rem",
+                                          padding: "0.5rem",
+                                          backgroundColor: isCorrect
+                                            ? "rgba(10, 200, 185, 0.1)"
+                                            : "var(--bg-primary)",
+                                          borderRadius: "var(--radius-sm)",
+                                          border: isCorrect
+                                            ? "1px solid var(--accent-primary)"
+                                            : "1px solid transparent",
+                                          position: "relative",
+                                        }}
+                                      >
+                                        <span
+                                          className="bet-role-label-mobile"
+                                          style={{
+                                            minWidth: "80px",
+                                            fontSize: "0.875rem",
+                                            color: "var(--text-secondary)",
+                                          }}
+                                        >
+                                          {role}:
+                                        </span>
+                                        <span
+                                          className="bet-role-value-mobile"
+                                          style={{
+                                            fontSize: "1rem",
+                                            color: isCorrect
+                                              ? "var(--accent-primary)"
+                                              : "var(--text-primary)",
+                                            fontWeight: 600,
+                                            flex: 1,
+                                          }}
+                                        >
+                                          {actual || "—"}
+                                        </span>
+                                        {isCorrect && (
+                                          <span
+                                            style={{
+                                              color: "var(--accent-primary)",
+                                              fontSize: "1.25rem",
+                                              flexShrink: 0,
+                                              marginLeft: "auto",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            ✓
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Team 2 Result */}
+                              <div>
+                                <h5
+                                  className="bet-team-name-mobile"
+                                  style={{
+                                    marginBottom: "0.75rem",
+                                    color: "var(--text-primary)",
+                                    fontSize: "0.9rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {match.team2}
+                                </h5>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "0.5rem",
+                                  }}
+                                >
+                                  {roles.map((role) => {
+                                    const predicted = predictions.team2?.[role];
+                                    const actual =
+                                      match.resultDraft.team2?.[role];
+                                    const isCorrect = predicted === actual;
+
+                                    return (
+                                      <div
+                                        key={role}
+                                        className="bet-role-item-mobile"
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "1rem",
+                                          padding: "0.5rem",
+                                          backgroundColor: isCorrect
+                                            ? "rgba(10, 200, 185, 0.1)"
+                                            : "var(--bg-primary)",
+                                          borderRadius: "var(--radius-sm)",
+                                          border: isCorrect
+                                            ? "1px solid var(--accent-primary)"
+                                            : "1px solid transparent",
+                                          position: "relative",
+                                        }}
+                                      >
+                                        <span
+                                          className="bet-role-label-mobile"
+                                          style={{
+                                            minWidth: "80px",
+                                            fontSize: "0.875rem",
+                                            color: "var(--text-secondary)",
+                                          }}
+                                        >
+                                          {role}:
+                                        </span>
+                                        <span
+                                          className="bet-role-value-mobile"
+                                          style={{
+                                            fontSize: "1rem",
+                                            color: isCorrect
+                                              ? "var(--accent-primary)"
+                                              : "var(--text-primary)",
+                                            fontWeight: 600,
+                                            flex: 1,
+                                          }}
+                                        >
+                                          {actual || "—"}
+                                        </span>
+                                        {isCorrect && (
+                                          <span
+                                            style={{
+                                              color: "var(--accent-primary)",
+                                              fontSize: "1.25rem",
+                                              flexShrink: 0,
+                                              marginLeft: "auto",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            ✓
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

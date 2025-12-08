@@ -41,7 +41,7 @@ export default function UserProfile() {
     if (userId) {
       loadUserProfile();
     }
-  }, [userId, currentUser, isAdmin]);
+  }, [userId]);
 
   async function loadUserProfile() {
     setLoading(true);
@@ -814,7 +814,11 @@ export default function UserProfile() {
                   marginBottom: "1rem",
                 }}
               >
-                <h3>Recent Bets</h3>
+                <h3
+                  style={{ margin: 0, display: "flex", alignItems: "center" }}
+                >
+                  Recent Bets
+                </h3>
                 {bets.length > 0 && (
                   <button
                     onClick={() => navigate(`/profile/${userId}/bets`)}
@@ -825,7 +829,7 @@ export default function UserProfile() {
                       gap: "8px",
                     }}
                   >
-                    View all bets
+                    View details
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"

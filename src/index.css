@@ -1083,7 +1083,7 @@ a:hover {
 
 /* PROFILE TABS */
 .profile-tabs {
-    justify-content: space-between;
+    justify-content: space-evenly;
 }
 
 /* PROFILE SECTION - Center h3 */
@@ -1272,8 +1272,158 @@ a:hover {
     .leaderboard-table th {
         font-size: 0.7rem;
     }
+}
 
-    .leaderboard-table .rank-medal {
-        font-size: 1rem;
+@media (max-width: 320px) {
+    .status-badge.active {
+        margin-left: 0 !important;
     }
+}
+
+/* UserBets responsive styles */
+.bet-item {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bet-item:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(10, 200, 185, 0.2);
+}
+
+.bets-predictions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+.bet-header-mobile {
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.bet-header-mobile > div:first-child {
+    width: 100%;
+}
+
+.bet-header-mobile > div:last-child {
+    width: 100%;
+    text-align: left;
+    justify-content: space-between;
+}
+
+.bet-team-name-mobile {
+    font-size: 0.9rem !important;
+}
+
+.bet-role-item-mobile {
+    flex-direction: row;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem !important;
+}
+
+.bet-role-label-mobile {
+    min-width: auto !important;
+    font-size: 0.75rem !important;
+}
+
+.bet-role-value-mobile {
+    font-size: 0.9rem !important;
+}
+
+@media (max-width: 768px) {
+    .bets-predictions-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .bet-header-mobile {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .bet-header-mobile > div:first-child {
+        width: 100%;
+    }
+    
+    .bet-header-mobile > div:last-child {
+        width: 100%;
+        text-align: left;
+        justify-content: space-between;
+    }
+    
+    .bet-team-name-mobile {
+        font-size: 0.9rem !important;
+    }
+    
+    .bet-role-item-mobile {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+    
+    .bet-role-label-mobile {
+        min-width: auto !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .bet-role-value-mobile {
+        font-size: 0.9rem !important;
+    }
+    
+    .bet-item {
+        padding: 1rem !important;
+    }
+    
+    .bet-expanded-content {
+        margin-top: 1rem !important;
+        padding-top: 1rem !important;
+    }
+    
+    .bet-item .score-earned {
+        font-size: 1.25rem !important;
+    }
+    
+    .bet-item .score-pending {
+        font-size: 0.9rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .bets-predictions-grid {
+        gap: 1rem;
+    }
+    
+    .bet-role-item-mobile {
+        padding: 0.5rem !important;
+        flex-direction: row !important;
+        align-items: center !important;
+    }
+    
+    .bet-item {
+        padding: 0.75rem !important;
+    }
+}
+
+@media (max-width: 424px) {
+    .user-bets {
+        padding: 0.2rem !important;
+    }
+}
+
+@media (min-width: 425px) {
+    .user-bets {
+        padding: 2rem !important;
+        margin: 0 !important;
+    }
+}
+
+.leaderboard-table .rank-medal {
+    font-size: 1rem;
 }
