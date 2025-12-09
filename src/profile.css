@@ -162,9 +162,6 @@
 }
 
 .bet-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding: var(--spacing-md) var(--spacing-lg);
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
