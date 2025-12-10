@@ -81,7 +81,7 @@ export default function ChampionSearch({
   const handleInputChange = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    setShowDropdown(true);
+    setShowDropdown(term.trim().length > 0);
   };
 
   const handleSelectChampion = (championName) => {
@@ -91,7 +91,9 @@ export default function ChampionSearch({
   };
 
   const handleInputFocus = () => {
-    setShowDropdown(true);
+    if (searchTerm.trim().length > 0) {
+      setShowDropdown(true);
+    }
   };
 
   const handleClear = () => {
@@ -141,31 +143,33 @@ export default function ChampionSearch({
           </button>
         )}
       </div>
-      {showDropdown && filteredChampions.length > 0 && (
-        <div className="champion-search-dropdown" ref={dropdownRef}>
-          {filteredChampions.slice(0, 10).map((champion) => (
-            <div
-              key={champion.id}
-              className="champion-search-option"
-              onClick={() => handleSelectChampion(champion.name)}
-            >
-              <img
-                src={getChampionImageUrl(champion.id)}
-                alt={champion.name}
-                className="champion-search-option-image"
-              />
-              <span className="champion-search-option-name">
-                {champion.name}
-              </span>
-            </div>
-          ))}
-          {filteredChampions.length > 10 && (
-            <div className="champion-search-more">
-              +{filteredChampions.length - 10} autres champions
-            </div>
-          )}
-        </div>
-      )}
+      {showDropdown &&
+        searchTerm.trim().length > 0 &&
+        filteredChampions.length > 0 && (
+          <div className="champion-search-dropdown" ref={dropdownRef}>
+            {filteredChampions.slice(0, 10).map((champion) => (
+              <div
+                key={champion.id}
+                className="champion-search-option"
+                onClick={() => handleSelectChampion(champion.name)}
+              >
+                <img
+                  src={getChampionImageUrl(champion.id)}
+                  alt={champion.name}
+                  className="champion-search-option-image"
+                />
+                <span className="champion-search-option-name">
+                  {champion.name}
+                </span>
+              </div>
+            ))}
+            {filteredChampions.length > 10 && (
+              <div className="champion-search-more">
+                +{filteredChampions.length - 10} autres champions
+              </div>
+            )}
+          </div>
+        )}
       {showDropdown &&
         searchTerm.trim() !== "" &&
         filteredChampions.length === 0 && (
