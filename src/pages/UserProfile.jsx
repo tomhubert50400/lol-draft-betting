@@ -22,6 +22,8 @@ export default function UserProfile() {
   const [events, setEvents] = useState([]);
   const [matches, setMatches] = useState({});
   const [loading, setLoading] = useState(true);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
+  const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editSocials, setEditSocials] = useState({
     twitter: "",
@@ -54,7 +56,6 @@ export default function UserProfile() {
       }
       setUser({ id: userDoc.id, ...userDoc.data() });
 
-      // Tous les utilisateurs peuvent voir les bets de n'importe qui
       try {
         const betsQuery = query(
           collection(db, "bets"),
@@ -75,23 +76,8 @@ export default function UserProfile() {
         logger.error("Error loading bets:", betsError);
         setBets([]);
       }
-
-      const eventsSnapshot = await getDocs(collection(db, "events"));
-      const eventsData = {};
-      eventsSnapshot.forEach((doc) => {
-        eventsData[doc.id] = { id: doc.id, ...doc.data() };
-      });
-      setEvents(eventsData);
-
-      const matchesSnapshot = await getDocs(collection(db, "matches"));
-      const matchesData = {};
-      matchesSnapshot.forEach((doc) => {
-        matchesData[doc.id] = { id: doc.id, ...doc.data() };
-      });
-      setMatches(matchesData);
     } catch (error) {
       logger.error("Error loading profile:", error);
-      // Ne pas afficher d'alerte pour les erreurs de permissions sur les bets
       if (!error.message.includes("permissions")) {
         alert("Error loading profile: " + error.message);
       }
@@ -108,6 +94,40 @@ export default function UserProfile() {
       });
     }
   }, [user]);
+
+  async function loadEventsAndMatches() {
+    if (eventsLoaded && matchesLoaded) return;
+    
+    try {
+      if (!eventsLoaded) {
+        const eventsSnapshot = await getDocs(collection(db, "events"));
+        const eventsData = eventsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setEvents(eventsData);
+        setEventsLoaded(true);
+      }
+      
+      if (!matchesLoaded) {
+        const matchesSnapshot = await getDocs(collection(db, "matches"));
+        const matchesData = {};
+        matchesSnapshot.forEach((doc) => {
+          matchesData[doc.id] = { id: doc.id, ...doc.data() };
+        });
+        setMatches(matchesData);
+        setMatchesLoaded(true);
+      }
+    } catch (error) {
+      logger.error("Error loading events/matches:", error);
+    }
+  }
+
+  useEffect(() => {
+    if (bets.length > 0 && activeTab === "overview") {
+      loadEventsAndMatches();
+    }
+  }, [bets.length, activeTab]);
 
   async function handleSaveSocials() {
     setError("");
@@ -177,11 +197,10 @@ export default function UserProfile() {
     scoredBets.length > 0 ? (totalPoints / scoredBets.length).toFixed(1) : 0;
   const socials = user.socials || {};
 
-  // Convertir events en tableau trié
   const eventsList = Object.values(events).sort((a, b) => {
     const aTime = a.createdAt?.seconds || 0;
     const bTime = b.createdAt?.seconds || 0;
-    return bTime - aTime; // Plus récent en premier
+    return bTime - aTime;
   });
 
   const calculateAdvancedStats = () => {
@@ -706,9 +725,7 @@ export default function UserProfile() {
         </div>
       )}
 
-      {/* Main Content Card with Tabs */}
       <div className="card">
-        {/* Tabs Navigation */}
         <div
           className="profile-tabs"
           style={{
@@ -768,7 +785,6 @@ export default function UserProfile() {
           </button>
         </div>
 
-        {/* Overview Tab */}
         {activeTab === "overview" && (
           <>
             <div className="profile-stats">
@@ -882,12 +898,10 @@ export default function UserProfile() {
           </>
         )}
 
-        {/* Statistics Tab */}
         {activeTab === "stats" && (
           <div className="advanced-stats">
             <h3>Advanced Statistics</h3>
 
-            {/* Key Metrics */}
             <div
               className="stats-overview"
               style={{
@@ -1013,7 +1027,6 @@ export default function UserProfile() {
               </div>
             </div>
 
-            {/* Accuracy by Role */}
             <div
               className="role-stats-section"
               style={{ marginBottom: "2rem" }}
@@ -1062,7 +1075,6 @@ export default function UserProfile() {
               </div>
             </div>
 
-            {/* Top Predicted Champions */}
             {advancedStats.topChampions.length > 0 && (
               <div className="champion-stats-section">
                 <h4 style={{ marginBottom: "1rem" }}>
@@ -1129,7 +1141,6 @@ export default function UserProfile() {
           </div>
         )}
 
-        {/* All Bets Tab */}
         {activeTab === "bets" && (
           <div className="all-bets">
             <h3>All Bets</h3>

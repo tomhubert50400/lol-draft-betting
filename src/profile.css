@@ -1,7 +1,3 @@
-/* =============================================
-   USER PROFILE PAGE
-   ============================================= */
-
 .user-profile {
     padding: var(--spacing-xl);
     animation: fadeIn 0.3s ease;
@@ -19,7 +15,6 @@
     }
 }
 
-/* Profile Header */
 .profile-header {
     text-align: center;
     margin-bottom: var(--spacing-xl);
@@ -67,7 +62,6 @@
     line-height: 1;
 }
 
-/* Profile Stats */
 .profile-stats {
     margin-bottom: var(--spacing-xl);
 }
@@ -119,7 +113,6 @@
     transform: translateY(-2px);
 }
 
-/* Event Scores */
 .event-scores {
     margin-bottom: var(--spacing-xl);
 }
@@ -152,7 +145,6 @@
     font-size: 1.1rem;
 }
 
-/* Recent Bets */
 .recent-bets {
     margin-bottom: var(--spacing-xl);
 }
@@ -197,7 +189,6 @@
     font-style: italic;
 }
 
-/* Create Event Section (for textarea elements) */
 .create-event-section textarea {
     width: 100%;
     padding: var(--spacing-md);
@@ -217,7 +208,6 @@
     box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .user-profile {
         padding: var(--spacing-md);

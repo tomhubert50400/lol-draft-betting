@@ -147,7 +147,6 @@ export default function AdminScoreManager() {
         </div>
       )}
 
-      {/* Change User Score Section */}
       <div className="card" style={{ marginBottom: '30px' }}>
         <h3>Change User Score</h3>
         
@@ -209,7 +208,6 @@ export default function AdminScoreManager() {
         )}
       </div>
 
-      {/* Reset All Scores Section */}
       <div className="card">
         <h3 style={{ color: '#ff6b6b' }}>⚠️ Danger Zone</h3>
         <p style={{ marginBottom: '15px', opacity: 0.8 }}>

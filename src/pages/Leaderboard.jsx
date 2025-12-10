@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, collection, query, orderBy, getDocs } from "../firebase";
+import { db, collection, query, orderBy, limit, getDocs } from "../firebase";
 import UserSearch from "../components/UserSearch";
 
 export default function Leaderboard() {
@@ -24,26 +24,44 @@ export default function Leaderboard() {
   }
 
   async function fetchLeaderboard() {
-    const usersSnapshot = await getDocs(collection(db, "users"));
-    const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+    const LEADERBOARD_LIMIT = 200;
+    
     let leaderboardData;
 
     if (selectedEventId === "global") {
-      leaderboardData = usersData.map(user => ({
-        userId: user.id,
-        username: user.username || "Unknown User",
-        points: user.totalScore || 0
-      })).filter(user => user.points > 0);
+      const usersQuery = query(
+        collection(db, "users"),
+        orderBy("totalScore", "desc"),
+        limit(LEADERBOARD_LIMIT)
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+      leaderboardData = usersSnapshot.docs
+        .map(doc => ({
+          userId: doc.id,
+          username: doc.data().username || "Unknown User",
+          points: doc.data().totalScore || 0
+        }))
+        .filter(user => user.points > 0);
     } else {
-      leaderboardData = usersData.map(user => ({
-        userId: user.id,
-        username: user.username || "Unknown User",
-        points: (user.eventScores && user.eventScores[selectedEventId]) || 0
-      })).filter(user => user.points > 0); // Only show users who participated
+      const usersQuery = query(
+        collection(db, "users"),
+        limit(LEADERBOARD_LIMIT * 2)
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+      leaderboardData = usersSnapshot.docs
+        .map(doc => {
+          const userData = doc.data();
+          return {
+            userId: doc.id,
+            username: userData.username || "Unknown User",
+            points: (userData.eventScores && userData.eventScores[selectedEventId]) || 0
+          };
+        })
+        .filter(user => user.points > 0)
+        .sort((a, b) => b.points - a.points)
+        .slice(0, LEADERBOARD_LIMIT);
     }
 
-    leaderboardData.sort((a, b) => b.points - a.points);
     setUsers(leaderboardData);
   }
 

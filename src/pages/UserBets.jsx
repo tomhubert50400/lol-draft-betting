@@ -26,13 +26,11 @@ export default function UserBets() {
     if (userId) {
       loadData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   async function loadData() {
     setLoading(true);
     try {
-      // Charger les infos utilisateur
       const userDoc = await getDoc(doc(db, "users", userId));
       if (!userDoc.exists()) {
         alert("User not found");
@@ -41,7 +39,6 @@ export default function UserBets() {
       }
       setUser({ id: userDoc.id, ...userDoc.data() });
 
-      // Charger les bets
       const betsQuery = query(
         collection(db, "bets"),
         where("userId", "==", userId)
@@ -58,7 +55,6 @@ export default function UserBets() {
       });
       setBets(betsData);
 
-      // Charger les événements
       const eventsSnapshot = await getDocs(collection(db, "events"));
       const eventsData = {};
       eventsSnapshot.forEach((doc) => {
@@ -66,7 +62,6 @@ export default function UserBets() {
       });
       setEvents(eventsData);
 
-      // Charger les matches
       const matchesSnapshot = await getDocs(collection(db, "matches"));
       const matchesData = {};
       matchesSnapshot.forEach((doc) => {
@@ -80,19 +75,16 @@ export default function UserBets() {
     setLoading(false);
   }
 
-  // Convertir events en tableau trié
   const eventsList = Object.values(events).sort((a, b) => {
     const aTime = a.createdAt?.seconds || 0;
     const bTime = b.createdAt?.seconds || 0;
-    return bTime - aTime; // Plus récent en premier
+    return bTime - aTime;
   });
 
-  // Filtrer les bets par événement sélectionné
   const eventBets = selectedEventId
     ? bets.filter((bet) => bet.eventId === selectedEventId)
     : [];
 
-  // Calculer les stats par événement
   const getEventStats = (eventId) => {
     const eventBetsList = bets.filter((bet) => bet.eventId === eventId);
     const totalBets = eventBetsList.length;
@@ -178,7 +170,6 @@ export default function UserBets() {
       </div>
 
       {selectedEventId ? (
-        // Vue des bets d'un événement sélectionné
         <div className="card">
           <div
             style={{
@@ -373,7 +364,6 @@ export default function UserBets() {
                         }}
                       >
                         <div className="bets-predictions-grid">
-                          {/* Team 1 Predictions */}
                           <div>
                             <h4
                               className="bet-team-name-mobile"
@@ -432,7 +422,6 @@ export default function UserBets() {
                             </div>
                           </div>
 
-                          {/* Team 2 Predictions */}
                           <div>
                             <h4
                               className="bet-team-name-mobile"
@@ -492,7 +481,6 @@ export default function UserBets() {
                           </div>
                         </div>
 
-                        {/* Show result draft if match is completed */}
                         {match.status === "completed" && match.resultDraft && (
                           <div
                             style={{
@@ -512,7 +500,6 @@ export default function UserBets() {
                               Actual Result
                             </h4>
                             <div className="bets-predictions-grid">
-                              {/* Team 1 Result */}
                               <div>
                                 <h5
                                   className="bet-team-name-mobile"
@@ -602,7 +589,6 @@ export default function UserBets() {
                                 </div>
                               </div>
 
-                              {/* Team 2 Result */}
                               <div>
                                 <h5
                                   className="bet-team-name-mobile"
@@ -703,7 +689,6 @@ export default function UserBets() {
           )}
         </div>
       ) : (
-        // Liste simple des événements (affichée par défaut)
         <div>
           <div style={{ marginBottom: "2rem" }}>
             <h2 style={{ marginBottom: "0.5rem" }}>Select an Event</h2>

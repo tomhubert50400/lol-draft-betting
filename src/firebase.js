@@ -25,6 +25,7 @@ import {
   query as fbQuery,
   where as fbWhere,
   orderBy as fbOrderBy,
+  limit as fbLimit,
   writeBatch as fbWriteBatch,
   serverTimestamp as fbServerTimestamp,
 } from "firebase/firestore";
@@ -75,6 +76,7 @@ export const deleteDoc = fbDeleteDoc;
 export const query = fbQuery;
 export const where = fbWhere;
 export const orderBy = fbOrderBy;
+export const limit = fbLimit;
 export const writeBatch = fbWriteBatch;
 export const serverTimestamp = fbServerTimestamp;
 

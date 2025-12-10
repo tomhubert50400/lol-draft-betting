@@ -1,6 +1,3 @@
-// Mock Firebase Implementation using LocalStorage
-
-// --- Auth Mocks ---
 const MOCK_USERS_KEY = "mock_users";
 const CURRENT_USER_KEY = "mock_current_user";
 
@@ -29,7 +26,7 @@ export function createUserWithEmailAndPassword(auth, email, password) {
     const newUser = {
       uid: "user_" + Date.now(),
       email,
-      password // In a real app, never store passwords plainly!
+      password
     };
     users.push(newUser);
     setMockUsers(users);
@@ -64,7 +61,6 @@ export function updateProfile(user, profileUpdates) {
     users[index] = updatedUser;
     setMockUsers(users);
     
-    // Update current user session if it matches
     const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
     if (currentUser && currentUser.uid === user.uid) {
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
@@ -82,36 +78,28 @@ export function signOut(auth) {
 }
 
 export function onAuthStateChanged(auth, callback) {
-  // Trigger immediately
   const user = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
   callback(user);
   
-  // Simple polling to detect changes (since we don't have a real event system across tabs easily)
   const interval = setInterval(() => {
     const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
-    // This is a very basic check, in a real app use storage events
-    // For this mock, we mainly care about initial load and login/logout actions which trigger state updates in AuthContext
   }, 1000);
 
   return () => clearInterval(interval);
 }
 
-
-// --- Firestore Mocks ---
-
-export const db = {}; // Mock DB object
+export const db = {};
 
 export function collection(db, path) {
   return { type: "collection", path };
 }
 
 export function doc(db, collectionPath, id) {
-  // Handle case where collectionPath is actually a collection object or string
   let path = "";
   if (typeof collectionPath === "object" && collectionPath.type === "collection") {
     path = collectionPath.path;
   } else {
-    path = collectionPath; // Assume it's "matches" or similar
+    path = collectionPath;
   }
   return { type: "doc", path, id };
 }
@@ -139,7 +127,6 @@ export function getDocs(queryRef) {
   return new Promise((resolve) => {
     let list = getCollectionData(queryRef.path);
     
-    // Apply filters/sorts if queryRef has them
     if (queryRef.filters) {
       queryRef.filters.forEach(filter => {
         if (filter.type === "where") {

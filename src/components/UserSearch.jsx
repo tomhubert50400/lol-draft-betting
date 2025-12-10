@@ -50,7 +50,7 @@ const UserSearch = forwardRef(function UserSearch(
         user.username?.toLowerCase().includes(searchTerm.toLowerCase())
       );
 
-      setResults(filtered.slice(0, 5)); // Limit to 5 results
+      setResults(filtered.slice(0, 5));
 
       if (filtered.length === 0) {
         setError("No users found");
@@ -67,7 +67,7 @@ const UserSearch = forwardRef(function UserSearch(
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       searchUsers();
-    }, 300); // Debounce de 300ms
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchUsers]);
@@ -86,7 +86,6 @@ const UserSearch = forwardRef(function UserSearch(
   }
 
   function handleInputBlur(e) {
-    // Ne pas fermer si on clique sur les résultats
     if (resultsRef.current && resultsRef.current.contains(e.relatedTarget)) {
       return;
     }
@@ -97,13 +96,11 @@ const UserSearch = forwardRef(function UserSearch(
 
   function handleKeyDown(e) {
     if (e.key === "Enter") {
-      e.preventDefault(); // Empêche le submit de formulaire
+      e.preventDefault();
 
-      // Si on a des résultats, sélectionner le premier
       if (results.length > 0) {
         handleSelectUser(results[0].id);
       } else if (searchTerm.trim().length >= 2 && !loading) {
-        // Si pas de résultats mais recherche valide, forcer la recherche
         searchUsers();
       }
     } else if (e.key === "Escape") {
@@ -218,7 +215,7 @@ const UserSearch = forwardRef(function UserSearch(
                 <div
                   key={user.id}
                   onClick={() => handleSelectUser(user.id)}
-                  onMouseDown={(e) => e.preventDefault()} // Empêche le blur avant le click
+                  onMouseDown={(e) => e.preventDefault()}
                   style={{
                     padding: "10px 12px",
                     cursor: "pointer",

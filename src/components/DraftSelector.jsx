@@ -18,7 +18,6 @@ export default function DraftSelector({
 
   const getExcludedChampionsForRole = (currentRole) => {
     const currentSelection = selections[currentRole];
-    // Exclure tous les champions sauf celui actuellement sélectionné pour ce rôle
     return allExcludedChampions.filter((champ) => champ !== currentSelection);
   };
 

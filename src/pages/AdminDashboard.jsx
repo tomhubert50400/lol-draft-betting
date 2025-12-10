@@ -11,6 +11,7 @@ import {
   query,
   orderBy,
   where,
+  limit,
   writeBatch,
   onSnapshot,
   serverTimestamp,
@@ -290,36 +291,47 @@ export default function AdminDashboard() {
 
       await batch.commit();
 
+      const allUsersQuery = query(
+        collection(db, "users"),
+        orderBy("totalScore", "desc"),
+        limit(1000)
+      );
+      const allUsersSnapshot = await getDocs(allUsersQuery);
+      const allUsers = [];
+      allUsersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        allUsers.push({
+          id: doc.id,
+          totalScore: data.totalScore || 0,
+        });
+      });
+      allUsers.sort((a, b) => b.totalScore - a.totalScore);
+
       for (const [userId, scoreToAdd] of Object.entries(userEventScores)) {
         const userRef = doc(db, "users", userId);
-        const userDoc = await getDocs(
-          query(collection(db, "users"), where("uid", "==", userId))
-        );
+        const userDoc = await getDoc(userRef);
 
-        if (!userDoc.empty) {
-          const userData = userDoc.docs[0].data();
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
           const eventScores = userData.eventScores || {};
           const eventId = resolvingMatch.eventId;
 
           eventScores[eventId] = (eventScores[eventId] || 0) + scoreToAdd;
           const newTotalScore = (userData.totalScore || 0) + scoreToAdd;
 
-          const userBetsQuery = query(
-            collection(db, "bets"),
-            where("userId", "==", userId),
-            where("isPerfectScore", "==", true)
-          );
-          const perfectBetsSnapshot = await getDocs(userBetsQuery);
-          const hasPerfectScore = perfectBetsSnapshot.size > 0;
-
           const allUserBetsQuery = query(
             collection(db, "bets"),
             where("userId", "==", userId)
           );
           const allUserBetsSnapshot = await getDocs(allUserBetsQuery);
+          
+          let hasPerfectScore = false;
           const uniqueMatches = new Set();
-          allUserBetsSnapshot.forEach((doc) => {
-            const betData = doc.data();
+          allUserBetsSnapshot.forEach((betDoc) => {
+            const betData = betDoc.data();
+            if (betData.isPerfectScore === true) {
+              hasPerfectScore = true;
+            }
             if (betData.matchId) {
               uniqueMatches.add(betData.matchId);
             }
@@ -388,17 +400,15 @@ export default function AdminDashboard() {
             });
           }
 
-          const allUsersSnapshot = await getDocs(collection(db, "users"));
-          const allUsers = [];
-          allUsersSnapshot.forEach((doc) => {
-            const data = doc.data();
-            allUsers.push({
-              id: doc.id,
-              totalScore: data.totalScore || 0,
-            });
-          });
-          allUsers.sort((a, b) => b.totalScore - a.totalScore);
-          const userRank = allUsers.findIndex((u) => u.id === userId) + 1;
+          const updatedUsers = [...allUsers];
+          const userIndex = updatedUsers.findIndex((u) => u.id === userId);
+          if (userIndex >= 0) {
+            updatedUsers[userIndex].totalScore = newTotalScore;
+          } else {
+            updatedUsers.push({ id: userId, totalScore: newTotalScore });
+          }
+          updatedUsers.sort((a, b) => b.totalScore - a.totalScore);
+          const userRank = updatedUsers.findIndex((u) => u.id === userId) + 1;
 
           if (
             userRank <= 10 &&

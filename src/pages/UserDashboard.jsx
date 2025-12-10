@@ -160,18 +160,13 @@ export default function UserDashboard() {
           createdAt: new Date()
         });
 
-        const userBetsQuery = query(
-          collection(db, "bets"),
-          where("userId", "==", currentUser.uid)
-        );
-        const userBetsSnapshot = await getDocs(userBetsQuery);
         const uniqueMatches = new Set();
-        userBetsSnapshot.forEach((doc) => {
-          const betData = doc.data();
-          if (betData.matchId) {
-            uniqueMatches.add(betData.matchId);
+        Object.values(bets).forEach((bet) => {
+          if (bet.matchId) {
+            uniqueMatches.add(bet.matchId);
           }
         });
+        uniqueMatches.add(selectedMatch.id);
         const totalBets = uniqueMatches.size;
         
         const userRef = doc(db, "users", currentUser.uid);

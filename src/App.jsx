@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ChampionsProvider } from "./contexts/ChampionsContext";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
@@ -33,10 +34,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="app-container">
-          <Navbar />
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
+        <ChampionsProvider>
+          <div className="app-container">
+            <Navbar />
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/welcome" element={<Welcome />} />
               <Route
@@ -66,6 +68,7 @@ function App() {
             </Routes>
           </Suspense>
         </div>
+        </ChampionsProvider>
       </AuthProvider>
     </Router>
   );
