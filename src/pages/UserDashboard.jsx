@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import DraftSelector from "../components/DraftSelector";
 import { logger } from "../utils/logger";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function UserDashboard() {
   const { currentUser } = useAuth();
@@ -115,7 +116,6 @@ export default function UserDashboard() {
 
   async function submitBet() {
     if (!currentUser) {
-      alert("You must be logged in to place a bet. Please log in first.");
       return;
     }
     if (!selectedMatch) return;
@@ -126,7 +126,6 @@ export default function UserDashboard() {
       const matchDoc = await getDoc(matchRef);
       
       if (!matchDoc.exists()) {
-        alert("Match not found.");
         setLoading(false);
         return;
       }
@@ -134,7 +133,6 @@ export default function UserDashboard() {
       const currentMatchData = matchDoc.data();
       
       if (currentMatchData.status !== "open") {
-        alert("Betting is closed for this match. The match status has changed.");
         setSelectedMatch(null);
         setPredictions({ team1: {}, team2: {} });
         setLoading(false);
@@ -148,7 +146,6 @@ export default function UserDashboard() {
           status: "pending",
           score: 0
         });
-        alert("Bet updated successfully!");
       } else {
         await addDoc(collection(db, "bets"), {
           userId: currentUser.uid,
@@ -211,15 +208,12 @@ export default function UserDashboard() {
             await updateDoc(userRef, { badges: newBadges });
           }
         }
-
-        alert("Bet placed successfully!");
       }
       setSelectedMatch(null);
       setEditingBet(null);
       setPredictions({ team1: {}, team2: {} });
     } catch (error) {
       logger.error("Error placing bet: ", error);
-      alert("Error placing bet");
     }
     setLoading(false);
   }
@@ -287,7 +281,7 @@ export default function UserDashboard() {
               ]}
             />
           </div>
-          <div className="actions">
+          <div className="actions" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <button 
               onClick={submitBet} 
               disabled={loading || !currentUser} 
@@ -296,6 +290,9 @@ export default function UserDashboard() {
             >
               {editingBet ? "Save Changes" : "Submit Bet"}
             </button>
+            {loading && (
+              <LoadingSpinner size="small" text="" />
+            )}
             <button
               onClick={() => {
                 setSelectedMatch(null);
@@ -339,7 +336,6 @@ export default function UserDashboard() {
                     <button
                       onClick={() => {
                         if (!currentUser) {
-                          alert("You must be logged in to place a bet. Please log in first.");
                           return;
                         }
                         setSelectedMatch(match);

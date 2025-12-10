@@ -4,6 +4,7 @@ import { ChampionsProvider } from "./contexts/ChampionsContext";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
+import SuspenseFallback from "./components/SuspenseFallback";
 
 const Login = lazy(() => import("./pages/Login"));
 const Welcome = lazy(() => import("./pages/Welcome"));
@@ -17,18 +18,6 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const UserBets = lazy(() => import("./pages/UserBets"));
 
-const LoadingSpinner = () => (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "50vh",
-    }}
-  >
-    <div className="spinner"></div>
-  </div>
-);
 
 function App() {
   return (
@@ -37,7 +26,7 @@ function App() {
         <ChampionsProvider>
           <div className="app-container">
             <Navbar />
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<SuspenseFallback />}>
               <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/welcome" element={<Welcome />} />

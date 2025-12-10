@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, collection, query, orderBy, limit, getDocs } from "../firebase";
 import UserSearch from "../components/UserSearch";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function Leaderboard() {
   const [users, setUsers] = useState([]);
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState("global");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +26,7 @@ export default function Leaderboard() {
   }
 
   async function fetchLeaderboard() {
+    setLoading(true);
     const LEADERBOARD_LIMIT = 200;
     
     let leaderboardData;
@@ -63,6 +66,7 @@ export default function Leaderboard() {
     }
 
     setUsers(leaderboardData);
+    setLoading(false);
   }
 
   return (
@@ -94,16 +98,19 @@ export default function Leaderboard() {
       </div>
 
       <div className="card">
-        <table className="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Username</th>
-              <th>Points</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user, index) => (
+        {loading ? (
+          <LoadingSpinner size="medium" text="Loading leaderboard..." />
+        ) : (
+          <table className="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Username</th>
+                <th>Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user, index) => (
               <tr 
                 key={user.userId}
                 onClick={() => navigate(`/profile/${user.userId}`)}
@@ -122,13 +129,14 @@ export default function Leaderboard() {
                 </td>
               </tr>
             ))}
-            {users.length === 0 && (
-              <tr>
-                <td colSpan="3">No scores yet</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan="3">No scores yet</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

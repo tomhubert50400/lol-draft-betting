@@ -10,6 +10,7 @@ import {
   doc,
 } from "../firebase";
 import { logger } from "../utils/logger";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function UserBets() {
   const { userId } = useParams();
@@ -33,7 +34,6 @@ export default function UserBets() {
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (!userDoc.exists()) {
-        alert("User not found");
         navigate("/");
         return;
       }
@@ -70,7 +70,6 @@ export default function UserBets() {
       setMatches(matchesData);
     } catch (error) {
       logger.error("Error loading data:", error);
-      alert("Error loading data: " + error.message);
     }
     setLoading(false);
   }
@@ -110,7 +109,7 @@ export default function UserBets() {
   if (loading) {
     return (
       <div className="user-bets" style={{ padding: "0.2rem" }}>
-        <h2>Loading...</h2>
+        <LoadingSpinner size="large" text="Loading bets..." />
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   db,
   collection,
@@ -18,8 +19,10 @@ import {
 } from "../firebase";
 import DraftSelector from "../components/DraftSelector";
 import { logger } from "../utils/logger";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [eventName, setEventName] = useState("");
   const [eventDescription, setEventDescription] = useState("");
@@ -139,10 +142,8 @@ export default function AdminDashboard() {
       setEventName("");
       setEventDescription("");
       setSelectedEventId(docRef.id);
-      alert("Event created successfully!");
     } catch (error) {
       logger.error("Error creating event:", error);
-      alert("Error creating event: " + error.message);
     }
     setLoading(false);
   }
@@ -151,7 +152,6 @@ export default function AdminDashboard() {
     e.preventDefault();
 
     if (!selectedEventId) {
-      alert("Please select an event first!");
       return;
     }
 
@@ -199,7 +199,6 @@ export default function AdminDashboard() {
       logger.log("Match created successfully in Firestore");
     } catch (error) {
       logger.error("Error creating match: ", error);
-      alert("Error creating match: " + error.message);
       setMatches((prev) => prev.filter((m) => m.id !== tempId));
       setTeam1(currentTeam1);
       setTeam2(currentTeam2);
@@ -218,7 +217,6 @@ export default function AdminDashboard() {
     } catch (error) {
       logger.error("Error updating match: ", error);
       setMatches(previousMatches);
-      alert("Failed to update status");
     }
   }
 
@@ -454,19 +452,12 @@ export default function AdminDashboard() {
           createdAt: serverTimestamp(),
           resultDraft: null,
         });
-
-        alert(
-          `Match resolved and scores calculated! Game ${nextGameNumber} has been automatically created.`
-        );
-      } else {
-        alert("Match resolved and scores calculated!");
       }
 
       setResolvingMatch(null);
       setResultDraft({ team1: {}, team2: {} });
     } catch (error) {
       logger.error("Error resolving match: ", error);
-      alert("Error resolving match");
     }
     setLoading(false);
   }
@@ -545,13 +536,9 @@ export default function AdminDashboard() {
       await deleteDoc(matchRef);
 
       logger.log("Match deleted successfully");
-      alert(
-        "Match and all associated bets deleted. User scores have been adjusted."
-      );
     } catch (error) {
       logger.error("Error deleting match:", error);
       setMatches(previousMatches);
-      alert("Failed to delete match: " + error.message);
     }
   }
 
@@ -620,14 +607,12 @@ export default function AdminDashboard() {
       await deleteDoc(eventRef);
 
       logger.log("Event deleted successfully");
-      alert("Event and all associated data deleted successfully!");
     } catch (error) {
       logger.error("Error deleting event:", error);
       setEvents(previousEvents);
       if (selectedEventId === eventId) {
         setSelectedEventId(eventId);
       }
-      alert("Failed to delete event: " + error.message);
     }
   }
 
@@ -640,7 +625,6 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       logger.error("Error updating event status:", error);
-      alert("Failed to update event status: " + error.message);
     }
   }
 
@@ -649,7 +633,7 @@ export default function AdminDashboard() {
       <div className="dashboard-header">
         <h2>Admin Dashboard</h2>
         <button
-          onClick={() => (window.location.href = "/admin/users")}
+          onClick={() => navigate("/admin/users")}
           className="btn-primary"
         >
           👥 Manage Users
@@ -688,9 +672,14 @@ export default function AdminDashboard() {
               rows="2"
             />
           </div>
-          <button disabled={loading} type="submit" className="btn-primary">
-            Create Event
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <button disabled={loading} type="submit" className="btn-primary">
+              Create Event
+            </button>
+            {loading && (
+              <LoadingSpinner size="small" text="" />
+            )}
+          </div>
         </form>
 
         {events.length > 0 && (
@@ -866,7 +855,7 @@ export default function AdminDashboard() {
               ]}
             />
           </div>
-          <div className="actions">
+          <div className="actions" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <button
               onClick={resolveMatch}
               disabled={loading}
@@ -874,6 +863,9 @@ export default function AdminDashboard() {
             >
               Confirm Results
             </button>
+            {loading && (
+              <LoadingSpinner size="small" text="" />
+            )}
             <button
               onClick={() => setResolvingMatch(null)}
               className="btn-secondary"

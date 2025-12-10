@@ -12,6 +12,7 @@ import {
 } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { logger } from "../utils/logger";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function UserProfile() {
   const { userId } = useParams();
@@ -50,7 +51,6 @@ export default function UserProfile() {
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (!userDoc.exists()) {
-        alert("User not found");
         navigate("/");
         return;
       }
@@ -78,9 +78,6 @@ export default function UserProfile() {
       }
     } catch (error) {
       logger.error("Error loading profile:", error);
-      if (!error.message.includes("permissions")) {
-        alert("Error loading profile: " + error.message);
-      }
     }
     setLoading(false);
   }
@@ -136,7 +133,6 @@ export default function UserProfile() {
       await updateUserSocials(editSocials);
       await loadUserProfile();
       setIsEditing(false);
-      alert("Socials updated successfully!");
     } catch (err) {
       setError("Failed to update socials: " + err.message);
     }
@@ -161,7 +157,6 @@ export default function UserProfile() {
     try {
       await changePassword(passwordData.current, passwordData.new);
       setPasswordData({ current: "", new: "", confirm: "" });
-      alert("Password changed successfully!");
     } catch (err) {
       setError("Failed to change password: " + err.message);
     }
@@ -171,7 +166,7 @@ export default function UserProfile() {
   if (loading) {
     return (
       <div className="user-profile">
-        <h2>Loading...</h2>
+        <LoadingSpinner size="large" text="Loading profile..." />
       </div>
     );
   }

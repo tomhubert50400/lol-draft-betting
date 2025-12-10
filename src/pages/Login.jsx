@@ -5,6 +5,7 @@ import { auth, sendPasswordResetEmail } from "../firebase";
 import { logger } from "../utils/logger";
 import { validateEmail, validatePassword, validateUsername, validateSocialUsername } from "../utils/validation";
 import { getErrorMessage } from "../utils/network";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function Login() {
   const emailRef = useRef();
@@ -100,13 +101,12 @@ export default function Login() {
   async function handleResetPassword() {
     const email = emailRef.current.value;
     if (!email) {
-      alert("Please enter your email to reset your password.");
       return;
     }
     
     const emailError = validateEmail(email);
     if (emailError) {
-      alert(emailError);
+      setError(emailError);
       return;
     }
 
@@ -117,7 +117,7 @@ export default function Login() {
     } catch (error) {
       logger.error("Error sending password reset email:", error);
       const errorMsg = getErrorMessage(error);
-      alert("Error: " + errorMsg);
+      setError("Error: " + errorMsg);
     }
     setLoading(false);
   }
@@ -280,15 +280,14 @@ export default function Login() {
               </button>
             </div>
           )}
-          <button disabled={loading} type="submit" className="btn-primary">
-            {loading
-              ? isLogin
-                ? "Logging In..."
-                : "Signing Up..."
-              : isLogin
-              ? "Log In"
-              : "Sign Up"}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <button disabled={loading} type="submit" className="btn-primary">
+              {isLogin ? "Log In" : "Sign Up"}
+            </button>
+            {loading && (
+              <LoadingSpinner size="small" text="" />
+            )}
+          </div>
         </form>
         <div className="auth-footer">
           {isLogin ? "Need an account? " : "Already have an account? "}

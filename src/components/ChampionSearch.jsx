@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useChampions } from "../contexts/ChampionsContext";
+import LoadingSpinner from "./LoadingSpinner";
 
 export default function ChampionSearch({
   value,
@@ -22,7 +23,7 @@ export default function ChampionSearch({
     }
 
     const excludedSet = new Set(excludedChampions);
-    
+
     const available = champions.filter((champ) => {
       if (champ.name === value) return true;
       return !excludedSet.has(champ.name);
@@ -42,7 +43,7 @@ export default function ChampionSearch({
           const bLower = b.name.toLowerCase();
           const aStarts = aLower.startsWith(term);
           const bStarts = bLower.startsWith(term);
-          
+
           if (aStarts && !bStarts) return -1;
           if (!aStarts && bStarts) return 1;
           return a.name.localeCompare(b.name);
@@ -102,12 +103,7 @@ export default function ChampionSearch({
   if (loading) {
     return (
       <div className="champion-search">
-        <input
-          type="text"
-          placeholder="Chargement des champions..."
-          disabled
-          className="champion-search-input"
-        />
+        <LoadingSpinner size="small" text="" />
       </div>
     );
   }
@@ -132,7 +128,7 @@ export default function ChampionSearch({
           placeholder={placeholder}
           disabled={disabled}
           className="champion-search-input"
-          style={{ minWidth: 0, maxWidth: '100%' }}
+          style={{ minWidth: 0, maxWidth: "100%" }}
         />
         {value && !disabled && (
           <button
@@ -182,4 +178,3 @@ export default function ChampionSearch({
     </div>
   );
 }
-

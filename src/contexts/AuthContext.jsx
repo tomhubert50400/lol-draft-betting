@@ -21,6 +21,8 @@ import {
   getDocs,
 } from "../firebase";
 import { logger } from "../utils/logger";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useDelayedLoading } from "../hooks/useDelayedLoading";
 
 const AuthContext = React.createContext();
 
@@ -32,6 +34,7 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDelayedLoading(loading, { delay: 200, minDisplayTime: 500 });
 
   async function signup(email, password, username, socials = {}) {
     const trimmedUsername = username.trim();
@@ -156,6 +159,7 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     isAdmin,
+    loading,
     signup,
     login,
     logout,
@@ -165,7 +169,11 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {showLoading ? (
+        <LoadingSpinner size="large" text="Initializing..." fullScreen />
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

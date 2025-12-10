@@ -9,6 +9,7 @@ import React, {
 import { useNavigate } from "react-router-dom";
 import { db, collection, getDocs } from "../firebase";
 import { logger } from "../utils/logger";
+import LoadingSpinner from "./LoadingSpinner";
 
 const UserSearch = forwardRef(function UserSearch(
   { placeholder = "Search users..." },
@@ -142,26 +143,31 @@ const UserSearch = forwardRef(function UserSearch(
         }}
       />
       {(searchTerm.trim().length >= 2 || results.length > 0) && (
-        <button
-          type="button"
-          onClick={handleSearchClick}
-          disabled={loading}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: "#0AC8B9",
-            border: "none",
-            borderRadius: "4px",
-            color: "#1E2328",
-            fontSize: "14px",
-            fontWeight: "bold",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            whiteSpace: "nowrap",
-          }}
-          aria-label="Search"
-        >
-          {loading ? "..." : "Search"}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <button
+            type="button"
+            onClick={handleSearchClick}
+            disabled={loading}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#0AC8B9",
+              border: "none",
+              borderRadius: "4px",
+              color: "#1E2328",
+              fontSize: "14px",
+              fontWeight: "bold",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
+              whiteSpace: "nowrap",
+            }}
+            aria-label="Search"
+          >
+            Search
+          </button>
+          {loading && (
+            <LoadingSpinner size="small" text="" />
+          )}
+        </div>
       )}
 
       {showResults && (
