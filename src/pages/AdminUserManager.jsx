@@ -14,6 +14,7 @@ import {
   httpsCallable,
 } from "../firebase";
 import { logger } from "../utils/logger";
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function AdminUserManager() {
   const navigate = useNavigate();
@@ -28,6 +29,12 @@ export default function AdminUserManager() {
   const [newSocials, setNewSocials] = useState({ twitter: "", instagram: "", discord: "" });
   const [isAdminToggle, setIsAdminToggle] = useState(false);
   const [userStats, setUserStats] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -211,16 +218,19 @@ export default function AdminUserManager() {
     setLoading(false);
   }
 
-  async function toggleAdminStatus() {
+  function handleToggleAdminStatus() {
     if (!foundUser) return;
 
     const newAdminStatus = !foundUser.isAdmin;
-    const confirmed = window.confirm(
-      `Are you sure you want to ${newAdminStatus ? "grant" : "revoke"} admin privileges for ${foundUser.username}?`
-    );
+    setConfirmModal({
+      isOpen: true,
+      title: `${newAdminStatus ? "Grant" : "Revoke"} Admin Privileges`,
+      message: `Are you sure you want to ${newAdminStatus ? "grant" : "revoke"} admin privileges for ${foundUser.username}?`,
+      onConfirm: () => toggleAdminStatus(newAdminStatus),
+    });
+  }
 
-    if (!confirmed) return;
-
+  async function toggleAdminStatus(newAdminStatus) {
     setLoading(true);
 
     try {
@@ -229,12 +239,13 @@ export default function AdminUserManager() {
         isAdmin: newAdminStatus,
       });
 
-      setMessage(`✅ Admin status updated! ${foundUser.username} is now ${newAdminStatus ? "an admin" : "a regular user"}`);
+      const adminStatus = newAdminStatus !== undefined ? newAdminStatus : !foundUser.isAdmin;
+      setMessage(`✅ Admin status updated! ${foundUser.username} is now ${adminStatus ? "an admin" : "a regular user"}`);
       
-      setIsAdminToggle(newAdminStatus);
+      setIsAdminToggle(adminStatus);
       setFoundUser({
         ...foundUser,
-        isAdmin: newAdminStatus,
+        isAdmin: adminStatus,
       });
     } catch (error) {
       logger.error("Error updating admin status:", error);
@@ -244,7 +255,7 @@ export default function AdminUserManager() {
     setLoading(false);
   }
 
-  async function changeUserPassword(e) {
+  function handleChangeUserPassword(e) {
     e.preventDefault();
     if (!foundUser || !foundUser.email) {
       setMessage("❌ User email not found");
@@ -261,13 +272,15 @@ export default function AdminUserManager() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Change password for ${foundUser.username} (${foundUser.email})?\n\n` +
-      `⚠️ The user will need to use this new password to log in.`
-    );
+    setConfirmModal({
+      isOpen: true,
+      title: "Change User Password",
+      message: `Change password for ${foundUser.username} (${foundUser.email})?\n\n⚠️ The user will need to use this new password to log in.`,
+      onConfirm: () => changeUserPassword(),
+    });
+  }
 
-    if (!confirmed) return;
-
+  async function changeUserPassword() {
     setLoading(true);
 
     try {
@@ -290,19 +303,18 @@ export default function AdminUserManager() {
     setLoading(false);
   }
 
-  async function deleteUser() {
+  function handleDeleteUser() {
     if (!foundUser) return;
 
-    const confirmed = window.confirm(
-      `⚠️ WARNING: This will PERMANENTLY delete ${foundUser.username}'s account:\n\n` +
-      `- Firebase Auth account\n` +
-      `- Firestore user document\n` +
-      `- All associated bets\n\n` +
-      `This action CANNOT be undone. Are you sure?`
-    );
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete User Account",
+      message: `⚠️ WARNING: This will PERMANENTLY delete ${foundUser.username}'s account:\n\n- Firebase Auth account\n- Firestore user document\n- All associated bets\n\nThis action CANNOT be undone. Are you sure?`,
+      onConfirm: () => deleteUser(),
+    });
+  }
 
-    if (!confirmed) return;
-
+  async function deleteUser() {
     setLoading(true);
     setMessage("");
 
@@ -530,7 +542,7 @@ export default function AdminUserManager() {
                     </small>
                   </div>
                     <button
-                      onClick={toggleAdminStatus}
+                      onClick={handleToggleAdminStatus}
                       disabled={loading}
                       className="btn-secondary"
                       style={{
@@ -554,7 +566,7 @@ export default function AdminUserManager() {
                 <p style={{ marginBottom: '15px', opacity: 0.8 }}>
                   Set a new password for {foundUser.username}
                 </p>
-                <form onSubmit={changeUserPassword}>
+                <form onSubmit={handleChangeUserPassword}>
                   <div className="form-group">
                     <label>New Password</label>
                     <input
@@ -600,7 +612,7 @@ export default function AdminUserManager() {
                   <strong style={{ color: '#ff6b6b' }}>This action CANNOT be undone.</strong>
                 </p>
                 <button
-                  onClick={deleteUser}
+                  onClick={handleDeleteUser}
                   disabled={loading}
                   className="btn-secondary"
                   style={{
@@ -616,6 +628,17 @@ export default function AdminUserManager() {
           )}
         </>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Yes"
+        cancelText="No"
+      />
     </div>
   );
 }

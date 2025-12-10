@@ -11,6 +11,7 @@ import {
   writeBatch
 } from "../firebase";
 import { logger } from "../utils/logger";
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function AdminScoreManager() {
   const navigate = useNavigate();
@@ -19,6 +20,12 @@ export default function AdminScoreManager() {
   const [pointsToAdd, setPointsToAdd] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   async function searchUser(e) {
     e.preventDefault();
@@ -89,13 +96,16 @@ export default function AdminScoreManager() {
     setLoading(false);
   }
 
+  function handleResetAllScores() {
+    setConfirmModal({
+      isOpen: true,
+      title: "Reset All Scores",
+      message: "⚠️ WARNING: This will reset ALL users' scores to 0. This action cannot be undone. Are you sure?",
+      onConfirm: () => resetAllScores(),
+    });
+  }
+
   async function resetAllScores() {
-    const confirmed = window.confirm(
-      "⚠️ WARNING: This will reset ALL users' scores to 0. This action cannot be undone. Are you sure?"
-    );
-
-    if (!confirmed) return;
-
     setLoading(true);
     setMessage("");
 
@@ -214,7 +224,7 @@ export default function AdminScoreManager() {
           This will reset ALL users' total scores and event scores to 0. This action cannot be undone.
         </p>
         <button
-          onClick={resetAllScores}
+          onClick={handleResetAllScores}
           disabled={loading}
           className="btn-secondary"
           style={{
@@ -226,6 +236,17 @@ export default function AdminScoreManager() {
           Reset All Scores
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Yes, Reset"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
 import DraftSelector from "../components/DraftSelector";
 import { logger } from "../utils/logger";
 import LoadingSpinner from "../components/LoadingSpinner";
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -39,6 +40,12 @@ export default function AdminDashboard() {
   const [resultDraft, setResultDraft] = useState({ team1: {}, team2: {} });
   const [excludedChampionsFromSeries, setExcludedChampionsFromSeries] =
     useState([]);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     async function getExcludedChampionsFromSeries() {
@@ -546,13 +553,16 @@ export default function AdminDashboard() {
     await updateMatchStatus(matchId, "open");
   }
 
+  function handleDeleteEvent(eventId) {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Event",
+      message: "⚠️ WARNING: This will delete the event and ALL associated matches and bets. This action cannot be undone. Are you sure?",
+      onConfirm: () => deleteEvent(eventId),
+    });
+  }
+
   async function deleteEvent(eventId) {
-    const confirmed = window.confirm(
-      "⚠️ WARNING: This will delete the event and ALL associated matches and bets. This action cannot be undone. Are you sure?"
-    );
-
-    if (!confirmed) return;
-
     logger.log("Deleting event:", eventId);
 
     const previousEvents = [...events];
@@ -742,7 +752,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteEvent(event.id);
+                          handleDeleteEvent(event.id);
                         }}
                         className="btn-delete"
                       >
@@ -963,6 +973,17 @@ export default function AdminDashboard() {
             </div>
           ))}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }
